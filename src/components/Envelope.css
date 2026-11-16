@@ -17,33 +17,70 @@
 }
 .Envelope--leaving { pointer-events: none; }
 
-/* ───────── 달밤 들판의 나무 한 그루 ─────────
-   그림(forest.svg)은 세로로 긴 한 장: 아래쪽 한 화면이 처음 보이는 장면(하늘·달·언덕·나무·풀밭),
-   그 위는 하늘이 이어지는 여백. 끝에서 이 전체가 아래로 지나가며 줄기와 잎 지붕을 타고 올려다보는 시선이 되고,
-   위쪽의 투명한 하늘을 지나 뒤의 별자리 하늘이 드러난다. */
+/* ───────── 은하수 아래 언덕 위의 나무 한 그루 ─────────
+   사진(tree-night.webp: Pexels, Johannes Plenio / 사람 실루엣은 지움)을 첫 화면의 하늘·나무로 쓰고,
+   그 아래를 어두운 풀밭(.Envelope__ground + ground.svg)이 채운다.
+   끝에서 이 전체가 아래로 지나가며 시선이 위로 올라가고, 위쪽의 투명한 하늘을 지나 뒤의 별자리 하늘이 드러난다. */
 .Envelope__world {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(100svh * 1.7773); /* forest.svg 비율 390 x 1500 (처음 한 화면 = 844) */
+  height: calc(100svh * 1.7773); /* 첫 화면(100svh) 위로 하늘이 더 이어지는 투명 여백 */
   z-index: 0;
   will-change: transform;
+}
+/* 사진 뒤의 불투명한 바탕: 사진 윗부분이 서서히 사라져도 뒤의 하늘 화면(글씨·별자리)이 비치지 않게 한다.
+   바탕도 함께 내려가므로 시선이 올라갈 때는 위쪽부터 자연스럽게 걷힌다. */
+.Envelope__world::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100svh + 90px);
+  background: #070b24;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 90px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 90px);
 }
 .Envelope--leaving .Envelope__world {
   animation: env-tilt-up 3s cubic-bezier(0.5, 0.05, 0.3, 1) forwards;
 }
-.Envelope__scene {
+.Envelope__photo {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 50% 100%;
+  left: 50%;
+  bottom: 18.2svh; /* 언덕 아랫단이 화면 y 690쯤 → 나무 밑동이 봉투 위쪽에 오도록 */
+  width: min(100vw, 560px);
+  height: auto;
+  transform: translateX(-50%);
+  user-select: none;
+  -webkit-user-drag: none;
+  /* 위쪽·양옆을 부드럽게 남색 바탕으로 녹여서 사진 경계가 보이지 않게 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 110px), linear-gradient(to right, transparent 0, #000 12%, #000 88%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent 0, #000 110px), linear-gradient(to right, transparent 0, #000 12%, #000 88%, transparent 100%);
+  mask-composite: intersect;
+}
+/* 언덕 아래 땅: 사진 맨 아랫줄의 어두운 색에서 이어진다 */
+.Envelope__ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(18.2svh + 2px);
+  background: linear-gradient(180deg, #0a0a0b 0%, #07080f 45%, #090d19 100%); /* 맨 윗색 = 사진 맨 아랫줄(≈ #0a0a0b) */
+}
+.Envelope__grass {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: min(100vw, 560px);
+  height: auto;
+  transform: translateX(-50%);
   user-select: none;
   -webkit-user-drag: none;
 }
-/* 봉투 위에 떨어지는 달빛 */
+/* 봉투 위에 떨어지는 별빛 */
 .Envelope__moon {
   position: absolute;
   left: 50%;
@@ -51,18 +88,20 @@
   width: 120%;
   height: 34svh;
   transform: translate(-50%, 50%);
-  background: radial-gradient(ellipse at center, rgba(196, 218, 255, 0.24), rgba(196, 218, 255, 0) 68%);
+  background: radial-gradient(ellipse at center, rgba(150, 175, 255, 0.26), rgba(150, 175, 255, 0) 68%);
   mix-blend-mode: screen;
 }
-/* 나무에서 천천히 떨어지는 낙엽 */
-.Envelope__fall {
+/* 가끔 하늘을 가르는 별똥별 */
+.Envelope__shoot {
   position: absolute;
-  width: var(--sz);
-  height: var(--sz);
-  border-radius: 0 100% 0 100%;
-  background: linear-gradient(135deg, #9a6b30, #6b4222);
+  width: var(--len);
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(235, 242, 255, 0.95));
+  filter: drop-shadow(0 0 4px rgba(190, 210, 255, 0.9));
   opacity: 0;
-  animation: env-leaf-fall var(--dur) ease-in-out var(--delay) infinite;
+  transform: rotate(24deg);
+  animation: env-shoot var(--dur) ease-in var(--delay) infinite;
 }
 /* 반딧불이 */
 .Envelope__firefly {
@@ -245,9 +284,9 @@
 .Envelope__cake {
   /* 편지(봉투 너비의 88%) 안에 케이크 그림을 크게. 그림 파일은 src/assets/cake.svg (png/jpg로 바꿔도 됨) */
   display: block;
-  width: 62%;
+  width: 74%;
   height: auto;
-  max-height: 86%;
+  max-height: 88%;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
@@ -305,12 +344,11 @@
   from { transform: translateY(0); }
   to { transform: translateY(60%); } /* 60% = 약 1.07 화면: 나무가 화면 아래로 빠져나갈 만큼 */
 }
-@keyframes env-leaf-fall {
-  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
-  12% { opacity: 0.95; }
-  50% { transform: translate(var(--sway), 18svh) rotate(160deg); }
-  88% { opacity: 0.95; }
-  100% { opacity: 0; transform: translate(calc(var(--sway) * -0.4), 36svh) rotate(330deg); }
+@keyframes env-shoot {
+  0%, 86% { opacity: 0; transform: translate(0, 0) rotate(24deg); }
+  88% { opacity: 1; }
+  96% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(150px, 68px) rotate(24deg); }
 }
 @keyframes env-firefly-drift {
   from { transform: translate(0, 0); }
