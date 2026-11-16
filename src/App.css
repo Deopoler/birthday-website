@@ -4,6 +4,4 @@
 html, body { background: var(--night); color: #fff; -webkit-tap-highlight-color: transparent; }
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 
-/* 스크롤 스냅: 별 화면(Sky)과 사진 화면(PhotoBoard)이 각각 화면에 고정되도록 */
-html { scroll-snap-type: y mandatory; }
-.Sky, .PhotoBoard { scroll-snap-align: start; scroll-snap-stop: always; }
+/* 별 화면과 사진 화면의 자석 스크롤은 src/useMagnetScroll.js 에서 처리 (CSS scroll-snap은 쓰지 않음) */
