@@ -30,7 +30,7 @@ export function createTree(engine) {
       p = p.clone().addScaledVector(d, l)
       d = d.clone().add(new THREE.Vector3((r() - 0.5) * 0.28, (r() - 0.35) * 0.2, (r() - 0.5) * 0.28)).normalize()
     }
-    if (depth >= 2) tips.push({ p: p.clone(), s: depth >= 4 ? 1 : 0.75 })
+    if (depth >= 3) tips.push({ p: p.clone(), s: depth >= 5 ? 1 : 0.8 })
     if (depth >= 6) return
     const n = depth === 0 ? 4 : r() < 0.45 ? 3 : 2
     const base = r() * Math.PI * 2
@@ -50,7 +50,7 @@ export function createTree(engine) {
 
   limb(new THREE.Vector3(0, -0.2, 0), new THREE.Vector3(0.06, 1, 0.02).normalize(), 2.9, 0.34, 0)
 
-  const uni = { uHorizon: { value: new THREE.Vector3(...HORIZON) }, uMoon: { value: MOON_DIR }, uTime: { value: 0 } }
+  const uni = { uDim: { value: 0 }, uHorizon: { value: new THREE.Vector3(...HORIZON) }, uMoon: { value: MOON_DIR }, uTime: { value: 0 } }
   const FOG = `uniform vec3 uHorizon; vec3 applyFog(vec3 c, float dist){ return mix(c, uHorizon * 0.95 + vec3(0.012, 0.008, 0.009), 1.0 - exp(-pow(dist / 30.0, 1.5))); }`
 
   const wood = new THREE.Mesh(
@@ -74,11 +74,14 @@ export function createTree(engine) {
   segs.forEach((g) => g.dispose())
 
   // 잎: 가지 끝 주변에 흩뿌린 작은 마름모들
-  const per = engine.state.coarse ? 40 : 64
+  const per = engine.state.coarse ? 34 : 58
   const count = tips.length * per
   const leaf = new THREE.InstancedBufferGeometry()
-  leaf.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0.34, 0.45, 0.1, 0, 1, 0, -0.34, 0.45, 0.1], 3))
-  leaf.setIndex([0, 1, 2, 0, 2, 3])
+  // 잎 하나: 끝이 뾰족한 타원, 가운데 잎맥을 따라 살짝 접혀 있다
+  leaf.setAttribute('position', new THREE.Float32BufferAttribute([
+    0, 0, 0, 0.2, 0.28, 0.06, 0.24, 0.55, 0.07, 0.14, 0.82, 0.04, 0, 1, 0, -0.14, 0.82, 0.04, -0.24, 0.55, 0.07, -0.2, 0.28, 0.06, 0, 0.5, 0,
+  ], 3))
+  leaf.setIndex([8, 0, 1, 8, 1, 2, 8, 2, 3, 8, 3, 4, 8, 4, 5, 8, 5, 6, 8, 6, 7, 8, 7, 0])
   const off = new Float32Array(count * 3)
   const par = new Float32Array(count * 4)
   let k = 0
@@ -90,7 +93,7 @@ export function createTree(engine) {
       const rr = Math.cbrt(r()) * 0.95 * t.s
       const s = Math.sqrt(1 - u * u)
       off.set([t.p.x + s * Math.cos(a) * rr, t.p.y + u * rr * 0.7 + 0.1, t.p.z + s * Math.sin(a) * rr], k * 3)
-      par.set([r() * 6.283, r() * 6.283, 0.13 + r() * 0.12, r()], k * 4)
+      par.set([r() * 6.283, r() * 6.283, 0.2 + r() * 0.16, r()], k * 4)
       k++
     }
   }
@@ -101,10 +104,10 @@ export function createTree(engine) {
     leaf,
     new THREE.ShaderMaterial({
       side: THREE.DoubleSide,
-      uniforms: { ...uni, uCenter: { value: center } },
+      uniforms: { ...uni, uCenter: { value: center }, uEye: { value: new THREE.Vector3() }, uSkyDir: { value: new THREE.Vector3(0, 1, 0) } },
       vertexShader: /* glsl */ `
         attribute vec3 aOff; attribute vec4 aPar;
-        uniform float uTime; uniform vec3 uCenter;
+        uniform float uTime, uDim; uniform vec3 uCenter, uEye, uSkyDir;
         varying vec3 vW; varying vec3 vOut; varying float vR;
         void main(){
           float ca = cos(aPar.x), sa = sin(aPar.x), cb = cos(aPar.y), sb = sin(aPar.y);
@@ -116,17 +119,21 @@ export function createTree(engine) {
           float g = sin(uTime * 0.9 + o.x * 0.5 + o.y * 0.3) * 0.5 + sin(uTime * 0.41 + o.z * 0.7) * 0.5;
           o.x += g * 0.07 * (o.y - 1.0) * 0.3;
           p += vec3(sin(uTime * 3.1 + aPar.w * 50.0), cos(uTime * 2.6 + aPar.w * 31.0), 0.0) * 0.022;
+          // 하늘을 올려다볼 때 별자리 바로 앞(시선 한가운데)에 걸리는 잎은 접어 없앤다: 글자 위에 검은 얼룩처럼 보이기 때문
+          vec3 w0 = (modelMatrix * vec4(o, 1.0)).xyz;
+          p *= 1.0 - uDim * smoothstep(0.84, 0.92, dot(normalize(w0 - uEye), uSkyDir));
           vec4 w = modelMatrix * vec4(o + p, 1.0);
           vW = w.xyz; vR = aPar.w;
           vOut = normalize(mat3(modelMatrix) * (aOff - uCenter));
           gl_Position = projectionMatrix * viewMatrix * w;
         }`,
       fragmentShader: /* glsl */ `
-        precision highp float; varying vec3 vW; varying vec3 vOut; varying float vR; uniform vec3 uMoon;
+        precision highp float; varying vec3 vW; varying vec3 vOut; varying float vR; uniform vec3 uMoon; uniform float uDim;
         ${FOG}
         void main(){
           float l = max(dot(normalize(vOut), uMoon) * 0.6 + 0.4, 0.0);
-          vec3 c = vec3(0.002, 0.006, 0.006) + vec3(0.018, 0.040, 0.046) * pow(l, 2.6) * (0.3 + vR);
+          // 하늘을 올려다볼 때(uDim)는 달빛 받은 면을 눌러 거의 실루엣으로: 별자리 뒤가 어수선하지 않게
+          vec3 c = vec3(0.002, 0.006, 0.006) + vec3(0.018, 0.040, 0.046) * pow(l, 2.6) * (0.3 + vR) * (1.0 - 0.8 * uDim);
           gl_FragColor = vec4(applyFog(c, distance(vW, cameraPosition)), 1.0);
         }`,
     }),
@@ -135,5 +142,5 @@ export function createTree(engine) {
 
   const group = new THREE.Group()
   group.add(wood, leaves)
-  return { group, update(dt, time) { uni.uTime.value = time } }
+  return { group, setDim(v) { uni.uDim.value = v }, setView(eye, dir) { leaves.material.uniforms.uEye.value.copy(eye); leaves.material.uniforms.uSkyDir.value.copy(dir) }, update(dt, time) { uni.uTime.value = time } }
 }

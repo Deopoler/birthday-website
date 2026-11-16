@@ -48,17 +48,20 @@ function createDome() {
         float band = exp(-bd * bd / (w * w));
         float n1 = fbm(d * 3.2 + 4.0);
         float n2 = fbm(d * 8.5 + vec3(2.0, 9.0, 4.0));
-        float cloud = band * (0.25 + 1.05 * n1) * (0.45 + 0.75 * n2);
+        float n3 = fbm(d * 21.0 + vec3(5.0, 3.0, 8.0));
+        float cloud = band * (0.25 + 1.05 * n1) * (0.45 + 0.75 * n2) * (0.62 + 0.76 * n3);
         cloud = pow(cloud, 1.45);
         // 먼지 띠: 중심선을 따라 어둡게 파인다
         float lane = smoothstep(0.42, 0.66, fbm(d * 5.5 + vec3(7.0, 1.0, 3.0)) + 0.18 * exp(-bd * bd / 0.004));
-        cloud *= mix(1.0, 0.22, lane * exp(-bd * bd / 0.012));
+        cloud *= mix(1.0, 0.12, lane * exp(-bd * bd / 0.014));
         vec3 warm = vec3(1.0, 0.80, 0.62);
         vec3 cool = vec3(0.42, 0.52, 1.0);
         vec3 mag = vec3(0.85, 0.35, 0.75);
         vec3 mw = mix(cool, warm, coreK * (0.5 + 0.5 * n1));
         mw = mix(mw, mag, 0.22 * smoothstep(0.5, 0.8, n2) * band);
-        col += mw * cloud * (0.10 + 0.42 * coreK);
+        col += mw * cloud * (0.13 + 0.50 * coreK);
+        // 은하수 양옆으로 번지는 옅은 푸른 성운
+        col += vec3(0.10, 0.16, 0.34) * exp(-bd * bd / 0.16) * (0.3 + 0.7 * n1) * 0.05;
         // 은하수 안의 낱알 같은 별 무리
 
         // 달 주변 빛무리
@@ -69,7 +72,8 @@ function createDome() {
         float f = smoothstep(0.55, 0.98, dot(d, uFocus));
         col *= 1.0 - 0.62 * f * uFocusAmt;
 
-        col *= smoothstep(-0.25, 0.02, up) * 0.85 + 0.15; // 지평선 아래는 어둡게
+        // 지평선은 땅의 안개색과 똑같이 맞춰 경계선이 보이지 않게 한다
+        col = mix(uHorizon * 0.95 + vec3(0.012, 0.008, 0.009), col, smoothstep(-0.01, 0.10, up));
         gl_FragColor = vec4(col, 1.0);
       }`,
   })

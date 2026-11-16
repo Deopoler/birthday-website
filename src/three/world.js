@@ -21,7 +21,9 @@ export const LANDSCAPE_Q = '(orientation: landscape) and (max-height: 500px)'
 
 const EYE = new THREE.Vector3(0, 1.55, 1.6)
 const ELEV = THREE.MathUtils.degToRad(73)
-const SKY_DIR = new THREE.Vector3(0, Math.sin(ELEV), -Math.cos(ELEV))
+// 살짝 오른쪽 하늘을 올려다본다: 나무가 화면 왼쪽 아래 구석에만 걸려 글자 뒤를 가리지 않는다
+const YAW = THREE.MathUtils.degToRad(15)
+const SKY_DIR = new THREE.Vector3(Math.sin(YAW) * Math.cos(ELEV), Math.sin(ELEV), -Math.cos(YAW) * Math.cos(ELEV))
 
 function createDeepField(n) {
   // 별자리와 사진 사이 공간에 흩어진 가까운 별들: 날아갈 때 곁을 스쳐 지나간다
@@ -139,6 +141,7 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
   deep.position.copy(EYE)
   cons.shared.uFade.value = 0
   sky.setFocus(SKY_DIR, 0)
+  tree.setView(EYE, SKY_DIR)
 
   // 봉투가 풀밭에 떨어져 있는 자세
   const envGroundPos = new THREE.Vector3(ENVELOPE_POS.x, groundH(ENVELOPE_POS.x, ENVELOPE_POS.z) + 0.11, ENVELOPE_POS.z)
@@ -153,6 +156,7 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
     phase: 'closed', // closed | lift | opening | leaving | sky
     look: 0, // 0 = 풀밭을 봄, 1 = 하늘을 올려다봄
     lift: 0, // 봉투가 손에 들린 정도
+    envDrop: 0, // 편지를 꺼낸 뒤 봉투가 아래로 내려간 정도
     fly: 0, // 별자리 → 사진으로 날아간 정도(스크롤)
     pan: 0, // 사진 벽을 따라 내려간 거리(px)
     intro: 0, // 별자리가 나타난 정도
@@ -218,9 +222,13 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
       env.group.position.y += Math.sin(k * Math.PI) * 0.18 // 살짝 호를 그리며 올라온다
       env.group.quaternion.slerpQuaternions(envGroundQ, tmpQ, k)
       env.group.scale.setScalar(lerp(ENV_GROUND_SCALE, 1, k))
+      if (S.envDrop > 0) {
+        env.group.position.addScaledVector(up, -0.55 * S.envDrop * S.envDrop)
+        env.group.rotateX(0.5 * S.envDrop)
+      }
       lantern.position.copy(camera.position).addScaledVector(fwd, 0.15).addScaledVector(up, 0.25)
-      lantern.intensity = 0.16 * k
-      env.setShellGlow(lerp(0.42, 0.06, k))
+      lantern.intensity = 0.3 * k
+      env.setShellGlow(lerp(0.42, 0.22, k))
       ground.setGlow(env.group.position, env.glow.intensity * 0.7)
     }
     sparkles.material.uniforms.uTime.value = time
@@ -238,6 +246,7 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
     wall.setArrive(S.fly)
     wall.setCamY(S.pan)
     tree.group.visible = S.fly < 0.35
+    tree.setDim(S.look)
 
     sky.aim = fwd
     sky.update(dt, time, camera)
@@ -277,29 +286,41 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
       S.phase = 'opening'
       onPhase?.('opening')
       const L = env.letter
-      tween({ dur: 0.7, easing: ease.inOut, update: (k) => { env.flapPivot.rotation.x = -2.95 * k; env.glow.intensity = 0.07 * k } })
-      tween({ dur: 0.8, delay: 0.5, easing: ease.out, update: (k) => { L.position.y = ENV_H * 0.78 * k } })
+      // 1) 뚜껑이 위로 젖혀져 봉투 뒤쪽으로 넘어간다(편지가 나올 길을 가리지 않게)
+      await tween({ dur: 0.8, easing: ease.inOut, update: (k) => { env.flapPivot.rotation.x = -3.42 * k; env.glow.intensity = 0.07 * k } })
+      // 2) 편지가 주머니에서 위로 미끄러져 나온다(주머니 앞판 뒤, 뒷판·뚜껑 앞)
+      await tween({ dur: 0.85, easing: ease.out, update: (k) => { L.position.y = ENV_H * 0.8 * k } })
+      if (S.disposed) return
+      // 3) 편지만 눈앞으로 다가오고, 봉투는 손에서 아래로 내려가며 사라진다(반투명하게 겹쳐 보이지 않게 따로 움직인다)
+      scene.attach(L)
+      const p0 = L.position.clone()
+      const q0 = L.quaternion.clone()
+      const tanH = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+      const dL = Math.max((ENV_W * 0.9) / (0.86 * 2 * tanH * camera.aspect), (ENV_H * 0.9) / (0.5 * 2 * tanH))
+      const p1 = new THREE.Vector3(0, 0.02, -dL).applyQuaternion(camera.quaternion).add(camera.position)
+      const q1 = camera.quaternion.clone()
       await tween({
-        dur: 0.75, delay: 1.25, easing: ease.inOut,
+        dur: 0.9, easing: ease.inOut,
         update: (k) => {
-          L.position.set(0, lerp(ENV_H * 0.78, 0.03, k), 0.002 + 0.11 * k)
-          L.scale.setScalar(1 + 0.12 * k)
-          L.material.emissiveIntensity = lerp(0.3, 0.5, k)
-          env.setShellOpacity(1 - 0.85 * k)
+          L.position.lerpVectors(p0, p1, k)
+          L.quaternion.slerpQuaternions(q0, q1, k)
+          L.material.emissiveIntensity = lerp(0.42, 0.62, k)
+          S.envDrop = k
+          env.setShellOpacity(1 - smooth(0.35, 1, k))
+          env.glow.intensity = 0.07 * (1 - k)
         },
+        done: () => (env.group.visible = false),
       })
-      await tween({ dur: 0.9, update: () => {} }) // 편지를 읽을 틈
+      await tween({ dur: 1.0, update: () => {} }) // 편지를 읽을 틈
       if (S.disposed) return
 
       S.phase = 'leaving'
       onPhase?.('leaving')
-      // 편지는 봉투를 떠나 별자리가 놓일 하늘로 날아가며 빛으로 변한다
-      scene.attach(L)
+      // 편지는 별자리가 놓일 하늘로 날아가며 빛으로 변한다
       const from = L.position.clone()
       const fromQ = L.quaternion.clone()
       const to = cons.group.position.clone()
       const s0 = L.scale.x
-      tween({ dur: 0.5, update: (k) => { env.setShellOpacity(0.15 * (1 - k)); env.glow.intensity = 0.07 * (1 - k) }, done: () => (env.group.visible = false) })
       tween({
         dur: 2.5, easing: ease.in,
         update: (k) => {
@@ -307,7 +328,7 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
           L.position.y += Math.sin(k * Math.PI) * 1.5
           L.quaternion.copy(fromQ).multiply(tmpQ.setFromEuler(new THREE.Euler(k * 2.2, k * 5.5, k * 1.2)))
           L.scale.setScalar(lerp(s0, 2.2, k))
-          L.material.emissiveIntensity = 0.5 + 2.2 * k * k * k
+          L.material.emissiveIntensity = 0.62 + 2.2 * k * k * k
         },
         done: () => {
           L.visible = false
