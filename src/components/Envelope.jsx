@@ -8,15 +8,18 @@ export default function Envelope() {
   const [phase, setPhase] = useState('closed')
   const timers = useRef([])
 
-  // 열려 있는 동안 body 스크롤 잠금, 언마운트 시 해제
+  // 봉투가 떠 있는 동안 body 스크롤 잠금. 이 컴포넌트는 끝나도 null만 반환하며 언마운트되지 않으므로
+  // phase가 'done'이 되는 시점(또는 언마운트)에 해제한다.
+  const done = phase === 'done'
   useEffect(() => {
+    if (done) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
       document.documentElement.classList.remove('env-reveal')
     }
-  }, [])
+  }, [done])
 
   useEffect(() => () => timers.current.forEach(clearTimeout), [])
 
