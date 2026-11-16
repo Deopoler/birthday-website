@@ -346,6 +346,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(0) rotate(0deg);
   transition: transform 0.95s cubic-bezier(0.22, 0.8, 0.3, 1) 0.5s, box-shadow 0.95s ease 0.5s;
+  will-change: transform, opacity; /* 처음부터 자기 레이어로 올려 두어, 열릴 때·떠오를 때 레이어 승격으로 깜빡이지 않게 */
 }
 .Envelope--opening .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
@@ -353,7 +354,12 @@
 }
 .Envelope--leaving .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
-  animation: env-letter-up 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  /* transform/opacity는 컴포지터에서 돌고, box-shadow·z-index는 따로 분리해 한 애니메이션이 통째로 메인 스레드로 밀리지 않게 한다.
+     z-index는 보간하지 않고(step-end) 한 번에 바꾼다: 2→3→4→5로 지나가며 앞면(z 3)과 같은 값에서 가려지는 프레임이 없도록 */
+  animation:
+    env-letter-up 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    env-letter-glow 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    env-letter-z 3s step-end forwards;
 }
 /* 편지 안: 케이크 이모지 + 축하 문구 */
 .Envelope__emoji {
@@ -371,6 +377,10 @@
   line-height: 1.15;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  /* background-clip:text는 요소 박스 안만 칠하므로, 글자 꼬리(Y)·기울어진 끝(!)이 잘리지 않게 padding으로 박스를 넓히고
+     같은 크기의 음수 margin으로 레이아웃은 그대로 둔다 */
+  padding: 0.12em 0.25em 0.3em;
+  margin: -0.12em -0.25em -0.3em;
   color: #e0566f;
   background: linear-gradient(90deg, #e8527a, #f08a4b);
   -webkit-background-clip: text;
@@ -403,31 +413,21 @@
 
 /* 1) 봉투 밖으로 완전히 빠져나옴(아직 앞면 뒤) → 2) 앞으로 나와 살짝 커지며 떠오름 → 3) 작아지고 빛나며 위(하늘)로 */
 @keyframes env-letter-up {
-  0% {
-    z-index: 2;
-    transform: translateY(-62%) rotate(-1.2deg) scale(1);
-    opacity: 1;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
-  }
-  22% {
-    z-index: 2;
-    transform: translateY(-104%) rotate(-0.6deg) scale(1);
-    opacity: 1;
-  }
-  23% { z-index: 5; }
-  42% {
-    z-index: 5;
-    transform: translateY(-112%) rotate(0deg) scale(1.07);
-    opacity: 1;
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3);
-  }
+  0% { transform: translateY(-62%) rotate(-1.2deg) scale(1); opacity: 1; }
+  22% { transform: translateY(-104%) rotate(-0.6deg) scale(1); opacity: 1; }
+  42% { transform: translateY(-112%) rotate(0deg) scale(1.07); opacity: 1; }
   80% { opacity: 1; }
-  100% {
-    z-index: 5;
-    transform: translateY(-52vh) rotate(0deg) scale(0.22);
-    opacity: 0;
-    box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6);
-  }
+  100% { transform: translateY(-52vh) rotate(0deg) scale(0.22); opacity: 0; }
+}
+@keyframes env-letter-glow {
+  0% { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18); }
+  42% { box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3); }
+  100% { box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6); }
+}
+/* 22%까지는 앞면 뒤(z 2)에서 올라오고, 완전히 빠져나온 뒤(23%)부터 앞(z 5) */
+@keyframes env-letter-z {
+  0% { z-index: 2; }
+  23% { z-index: 5; }
 }
 @keyframes env-tilt-up {
   from { transform: translateY(0); }
