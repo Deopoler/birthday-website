@@ -53,7 +53,7 @@ export default function Envelope() {
       >
         <span className="Envelope__body">
           <span className="Envelope__letter">
-            <span className="Envelope__letterText">🎂 Happy Birthday</span>
+            <span className="Envelope__letterText" role="img" aria-label="생일 케이크">🎂</span>
           </span>
           <span className="Envelope__front" />
           <span className="Envelope__flap" />

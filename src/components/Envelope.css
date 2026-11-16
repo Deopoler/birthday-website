@@ -139,8 +139,9 @@
   animation: env-letter-up 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 .Envelope__letterText {
-  font-size: 18px;
-  color: #8a5a35;
+  /* 편지(봉투 너비의 88%) 안에 케이크만 크게 */
+  font-size: calc(var(--w) * 0.4);
+  line-height: 1;
 }
 
 .Envelope__hint {
