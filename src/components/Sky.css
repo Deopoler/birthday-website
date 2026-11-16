@@ -13,9 +13,7 @@
   position: absolute;
   inset: 0;
   touch-action: pan-y;
-  transition: transform 0.52s cubic-bezier(0.3, 0.1, 0.2, 1);
 }
-.Sky-world.is-zoomed { transform: scale(3); }
 .Sky-bg { position: absolute; inset: 0; }
 .Sky-bgstar {
   position: absolute;
@@ -88,8 +86,15 @@
   box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8);
   animation: none;
 }
-.Sky-star { touch-action: pan-y; transition: transform 0.52s ease-out; }
-.Sky-star.is-active { transform: translate(-50%, -50%) scale(2.2); z-index: 2; }
+.Sky-star { touch-action: pan-y; }
+/* 카드로 변해 있는 동안 별 자리는 비움(카드가 그 별) */
+.Sky-star.is-active { opacity: 0; animation: none; }
+.Sky-star.is-reborn { animation: sky-reborn 0.9s ease-out; }
+@keyframes sky-reborn {
+  0% { transform: translate(-50%, -50%) scale(0.4); box-shadow: 0 0 4px 1px rgba(255, 200, 80, 0.4); }
+  40% { transform: translate(-50%, -50%) scale(1.7); box-shadow: 0 0 22px 9px rgba(255, 220, 120, 1); }
+  100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8); }
+}
 .Sky-counter {
   position: absolute;
   top: calc(12px + env(safe-area-inset-top, 0px));
@@ -112,36 +117,61 @@
   animation: sky-twinkle 3s ease-in-out infinite;
 }
 
+/* 배경 하늘: 살짝 어두워지고 흐려지기만 함 */
 .Sky-overlay {
   position: absolute;
   inset: 0;
   z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(3, 6, 24, 0.6);
-  animation: sky-fade 0.3s ease-out;
+  background: rgba(3, 6, 24, 0.55);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  transition: opacity 0.5s ease-out;
   touch-action: none;
 }
-@keyframes sky-fade { from { opacity: 0; } }
+.Sky-overlay.is-opening, .Sky-overlay.is-open { opacity: 1; }
+.Sky-overlay.is-closing { opacity: 0; transition: opacity 0.5s ease-in; }
+
+/* 편지지 카드: 최종 위치는 CSS(중앙). 열기/닫기 모프는 JS(WAAPI)가 rect를 보간 */
 .Sky-letter {
-  position: relative;
-  width: min(100%, 340px);
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(calc(100vw - 40px), 340px);
   padding: 30px 24px 22px;
+  overflow: hidden;
   color: #4a3a2a;
-  background:
-    repeating-linear-gradient(180deg, transparent 0 27px, rgba(150, 120, 90, 0.25) 27px 28px),
-    #fff8e6;
-  border-radius: 4px;
+  background-color: #fff8e6;
+  border-radius: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(200, 160, 100, 0.2);
-  animation: sky-paper 0.35s ease-out both;
+  touch-action: none;
 }
-@keyframes sky-paper {
-  from { opacity: 0; transform: scale(0.6) rotate(-3deg); }
-  to { opacity: 1; transform: scale(1) rotate(0); }
+/* 줄 간격 + 접힌 느낌의 가로 접힘선 */
+.Sky-letter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent 33%, rgba(120, 90, 60, 0.12) 33.4%, rgba(255, 255, 255, 0.35) 33.9%, transparent 35%),
+    linear-gradient(180deg, transparent 66%, rgba(120, 90, 60, 0.12) 66.4%, rgba(255, 255, 255, 0.35) 66.9%, transparent 68%),
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(150, 120, 90, 0.22) 27px 28px);
+  opacity: 0;
+  transition: opacity 0.3s;
 }
-.Sky-text { margin: 0 0 14px; font-size: 16px; line-height: 28px; word-break: keep-all; max-height: 50svh; overflow-y: auto; }
+.Sky-letter.is-open::before { opacity: 1; }
+.Sky-letter.is-opening::before { opacity: 1; transition-delay: 0.45s; }
+/* 내용은 카드가 거의 다 펼쳐진 뒤 페이드인, 닫을 땐 먼저 사라짐 */
+.Sky-content, .Sky-close { opacity: 0; transition: opacity 0.12s ease-in; }
+.Sky-content { position: relative; }
+.Sky-letter.is-opening .Sky-content,
+.Sky-letter.is-opening .Sky-close { opacity: 1; transition: opacity 0.3s ease-out 0.55s; }
+.Sky-letter.is-open .Sky-content,
+.Sky-letter.is-open .Sky-close { opacity: 1; transition: opacity 0.2s ease-out; }
+.Sky-text { margin: 0 0 14px; font-size: 16px; line-height: 28px; word-break: keep-all; max-height: 50svh; overflow-y: auto; touch-action: pan-y; }
 .Sky-from { margin: 0; text-align: right; font-size: 15px; font-weight: 600; line-height: 28px; }
 .Sky-close {
   position: absolute;
@@ -158,6 +188,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .Sky-world, .Sky-star { transition-duration: 0.01s !important; }
   .Sky *, .Sky-letter { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
+  .Sky-overlay, .Sky-letter::before, .Sky-content, .Sky-close { transition-duration: 0.2s !important; transition-delay: 0s !important; }
 }
