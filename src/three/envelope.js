@@ -79,7 +79,7 @@ export function createEnvelope() {
   const H = ENV_H
   const group = new THREE.Group()
   // 종이는 스스로 은은히 빛난다(달을 등지고 놓여 있어도 풀밭에서 눈에 띄게)
-  const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0, side: THREE.DoubleSide, transparent: true, emissive: 0xfff1d6, emissiveMap: o.map, emissiveIntensity: 0.3, ...o })
+  const std = (o) => new THREE.MeshStandardMaterial({ roughness: 0.92, metalness: 0, side: THREE.DoubleSide, emissive: 0xfff1d6, emissiveMap: o.map, emissiveIntensity: 0.3, ...o })
 
   const backT = canvasTex(256, 256, (g, w, h) => paper(g, w, h, '#e6d6b4'))
   const back = new THREE.Mesh(new THREE.PlaneGeometry(W, H), std({ map: backT.tex }))
@@ -116,7 +116,7 @@ export function createEnvelope() {
   flapPivot.add(flap)
 
   // 밀랍 봉인: 납작한 원반 + 도톰한 테두리
-  const wax = new THREE.MeshStandardMaterial({ color: 0x9b1b22, roughness: 0.38, metalness: 0.05, transparent: true, emissive: 0x7a1016, emissiveIntensity: 0.35 })
+  const wax = new THREE.MeshStandardMaterial({ color: 0x9b1b22, roughness: 0.38, metalness: 0.05, emissive: 0x7a1016, emissiveIntensity: 0.35 })
   const seal = new THREE.Group()
   const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.04, 0.008, 28), wax)
   disc.rotation.x = Math.PI / 2
@@ -151,7 +151,7 @@ export function createEnvelope() {
   })
   const letter = new THREE.Mesh(
     new THREE.PlaneGeometry(W * 0.9, H * 0.9),
-    new THREE.MeshStandardMaterial({ map: letterT.tex, roughness: 0.85, side: THREE.DoubleSide, transparent: true, emissive: 0xfff0d0, emissiveMap: letterT.tex, emissiveIntensity: 0.3 }),
+    new THREE.MeshStandardMaterial({ map: letterT.tex, roughness: 0.85, side: THREE.DoubleSide, emissive: 0xfff0d0, emissiveMap: letterT.tex, emissiveIntensity: 0.42 }),
   )
   letter.position.z = 0.002
 
@@ -172,7 +172,14 @@ export function createEnvelope() {
   const shell = [back.material, pocket.material, flap.material, wax]
   return {
     group, flapPivot, letter, glow,
-    setShellOpacity(a) { for (const m of shell) m.opacity = a },
+    // 사라질 때만 반투명으로 바꾼다(평소에 반투명이면 겹친 종이끼리 그리는 순서가 뒤섞여 보인다)
+    setShellOpacity(a) {
+      for (const m of shell) {
+        const t = a < 1
+        if (m.transparent !== t) { m.transparent = t; m.needsUpdate = true }
+        m.opacity = a
+      }
+    },
     setShellGlow(v) { for (const m of shell) m.emissiveIntensity = v },
   }
 }

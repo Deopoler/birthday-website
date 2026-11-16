@@ -97,6 +97,9 @@ main { position: relative; z-index: 1; overflow-x: clip; }
 }
 .W3-star:focus-visible { outline: 2px solid #fff; outline-offset: -8px; box-shadow: 0 0 14px 4px rgba(190, 210, 255, 0.7); }
 
+/* 안내문: 2D 의 크기 변하는 깜빡임은 왼쪽이 잘려 보여서 밝기만 바꾼다 */
+.W3-sky .Sky-hint { animation-name: w3-breathe; }
+
 .W3-veil {
   position: fixed;
   inset: 0;
