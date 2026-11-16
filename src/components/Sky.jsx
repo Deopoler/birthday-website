@@ -70,6 +70,7 @@ function useLandscapeCompact() {
 export default function Sky() {
   const bgStars = useMemo(() => makeBgStars(60), [])
   const [opened, setOpened] = useState([])
+  const [linked, setLinked] = useState([]) // 편지를 닫은 별: 선은 열 때가 아니라 닫힌 뒤 이어진다
   const [active, setActive] = useState(null) // 카드로 변해 있는 별
   const [phase, setPhase] = useState('idle') // idle | opening | open | closing
   const [reborn, setReborn] = useState(null) // 닫힌 뒤 다시 반짝일 별
@@ -86,7 +87,8 @@ export default function Sky() {
   const { constellation, strokeSegments, decorStars } = landscape ? landscapeLayout : portraitLayout
   const count = Math.min(messages.length, constellation.length)
   const openSet = new Set(opened)
-  const segs = strokeSegments.filter((s) => openSet.has(s.a) && openSet.has(s.b))
+  const linkedSet = new Set(linked)
+  const segs = strokeSegments.filter((s) => linkedSet.has(s.a) && linkedSet.has(s.b))
 
   const go = (p) => {
     phaseRef.current = p
@@ -150,6 +152,7 @@ export default function Sky() {
       anim.current = null
       setActive(null)
       setReborn(idx)
+      setLinked((l) => (l.includes(idx) ? l : [...l, idx])) // 별이 돌아온 뒤 선이 그려진다
       go('idle')
     }
   }

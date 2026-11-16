@@ -375,13 +375,16 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
       S.focus.copy(cons.worldPos(i)).sub(camera.position).multiplyScalar(0.07)
       S.focusT = 1
     },
-    closeStar(i) {
+    // 편지가 별로 접혀 들어가는 동안(linkDelay 초 뒤부터) 두 별을 잇는 선이 그려진다
+    closeStar(i, linkDelay = 0.4) {
       cons.setActive(null)
       cons.burst(i)
+      cons.link(i, linkDelay)
       S.focusT = 0
     },
     // 모두 열었을 때: 별자리가 일렁이고, 불꽃이 터지고, 별똥별이 쏟아진다
     finale() {
+      cons.linkAll()
       cons.celebrate()
       sky.shower(9)
       const r = rng(Date.now() % 1000)

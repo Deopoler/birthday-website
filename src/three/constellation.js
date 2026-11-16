@@ -112,6 +112,7 @@ export function createConstellation(engine) {
   let litNow = null
   let segs = [] // { a, b, mesh, prog, on }
   const opened = new Set()
+  const linked = new Set() // 편지를 닫은 별: 선은 열 때가 아니라 닫을 때 이어진다
   let active = -1
   const local = (x, y) => [(x - 0.5) * dims.fw, (0.5 - y) * dims.vh, 0]
 
@@ -182,13 +183,13 @@ export function createConstellation(engine) {
     })
   }
 
-  function syncSegs(animate) {
+  function syncSegs(animate, delay = 0.25) {
     for (const s of segs) {
-      const want = opened.has(s.a) && opened.has(s.b)
+      const want = linked.has(s.a) && linked.has(s.b)
       if (want === s.on) continue
       s.on = want
       const u = s.mesh.material.uniforms.uProg
-      if (want && animate) tween({ dur: 0.95, delay: 0.25, easing: ease.inOut, update: (k) => (u.value = k) })
+      if (want && animate) tween({ dur: 0.95, delay, easing: ease.inOut, update: (k) => (u.value = k) })
       else u.value = want ? 1 : 0
     }
   }
@@ -207,9 +208,20 @@ export function createConstellation(engine) {
       return new THREE.Vector3(x, y, 0)
     },
     worldPos(i) { return group.localToWorld(this.localPos(i)) },
+    // 열기: 별만 켜진다(선은 그대로)
     open(i) {
       opened.add(i)
-      syncSegs(true)
+    },
+    // 편지를 닫는 중: 짝이 완성된 선을 delay(초) 뒤부터 그린다. 이미 이어진 선은 다시 그리지 않는다
+    link(i, delay = 0.25) {
+      opened.add(i)
+      linked.add(i)
+      syncSegs(true, delay)
+    },
+    // 피날레 안전장치: 아직 이어지지 않은 선이 있으면 모두 잇는다
+    linkAll() {
+      for (let i = 0; i < count; i++) if (opened.has(i)) linked.add(i)
+      syncSegs(true, 0.1)
     },
     setActive(i) { active = i ?? -1 },
     // 별이 터지며 빛의 고리가 퍼진다

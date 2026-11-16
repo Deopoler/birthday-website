@@ -190,7 +190,7 @@ export default function App3D() {
     setActive(i)
     worldRef.current?.openStar(i)
   }
-  const onClosing = useCallback(() => worldRef.current?.closeStar(active), [active])
+  const onClosing = useCallback(() => worldRef.current?.closeStar(active, (CLOSE_MS * 0.5) / 1000), [active])
   const onClosed = useCallback(() => setActive(null), [])
   useEffect(() => {
     if (active != null || returnFocus.current == null) return
