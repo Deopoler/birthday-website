@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import cake from '../assets/cake.webp'
 import treeNight from '../assets/tree-night.webp'
 import ground from '../assets/ground.svg'
 import './Envelope.css'
@@ -96,7 +95,8 @@ export default function Envelope() {
       >
         <span className="Envelope__body">
           <span className="Envelope__letter">
-            <img className="Envelope__cake" src={cake} alt="생일 케이크" draggable="false" />
+            <span className="Envelope__emoji" role="img" aria-label="생일 케이크">🎂</span>
+            <span className="Envelope__wish">HAPPY BIRTHDAY!</span>
           </span>
           <span className="Envelope__front">
             <span className="Envelope__to">To. 하진 순장님께</span>

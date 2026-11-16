@@ -3,7 +3,12 @@
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: linear-gradient(180deg, #050a24 0%, #14194a 55%, #3a2a5e 100%);
+  /* 첫 화면 나무 사진과 같은 사진에서 나무가 없는 하늘만 잘라 쓴다(위아래를 뒤집어, 첫 화면 사진과 맞닿는 아랫부분이
+     가장 어둡고 같은 색이 되도록). 별자리가 또렷이 보이도록 위쪽을 남색으로 살짝 눌러 둔다. */
+  background:
+    linear-gradient(180deg, rgba(5, 10, 36, 0.5) 0%, rgba(5, 10, 36, 0.3) 55%, rgba(5, 10, 36, 0.08) 100%),
+    url('../assets/sky-night.webp') 50% 100% / cover no-repeat,
+    #0b1456;
   color: #fff;
   user-select: none;
   touch-action: pan-y; /* 하늘 위 세로 스와이프로 아래 화면 스크롤 */

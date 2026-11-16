@@ -9,9 +9,12 @@ import { useEffect } from 'react'
 //  - 사진 화면 안쪽(맨 위보다 아래)은 평소처럼 자유 스크롤. 위로 올리다 맨 위에 닿으면 이어서 별 화면으로 넘어간다
 //  - 모달/사진 확대/인트로처럼 body 스크롤을 잠근 동안에는 관여하지 않는다
 // 마지막 안전망: 스크롤바 드래그처럼 가로챌 수 없는 경우엔 멈춘 뒤 가까운 쪽으로 붙인다.
-const DURATION = 680 // 이동 시간(ms)
+const DURATION = 560 // 이동 시간(ms)
 const COOLDOWN = 380 // 이동 직후 관성 스크롤(트랙패드)이 다음 화면을 또 건드리지 않게 무시하는 시간(ms)
-const TOUCH_SLOP = 6 // 터치로 이만큼(px) 끌면 의도로 본다
+const TOUCH_SLOP = 3 // 터치로 이만큼(px) 끌면 의도로 본다
+// 실제 휴대폰에서는 터치가 이미 기본 스크롤로 시작돼 막을 수 없는 경우가 있다(touchmove가 cancelable이 아님).
+// 그때는 기본 스크롤이 이만큼(px)만 움직여도 바로 이어받아 다음 화면으로 보낸다(예전: 화면 절반을 넘겨야 붙음).
+const NATIVE_TAKEOVER = 10
 const SETTLE_MS = 140
 
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
@@ -26,6 +29,12 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     let animating = false
     let cooldownUntil = 0
     let settleTimer = 0
+    let anchor = 0 // 마지막으로 머문 곳: 0 = 별 화면, 1 = 사진 화면(맨 위 포함)
+    const syncAnchor = () => {
+      const H = skyH()
+      anchor = H && window.scrollY >= H - 1 ? 1 : 0
+    }
+    const releaseRoot = () => { document.documentElement.style.overflowY = '' }
 
     // dir: +1(아래로) / -1(위로). 가로채야 하면 이동할 목표 y를, 아니면 null을 돌려준다.
     const targetFor = (dir) => {
@@ -44,6 +53,8 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       if (reduced()) {
         window.scrollTo(0, target)
         cooldownUntil = performance.now() + COOLDOWN
+        syncAnchor()
+        releaseRoot()
         return
       }
       animating = true
@@ -57,6 +68,8 @@ export default function useMagnetScroll(skySelector = '.Sky') {
           window.scrollTo(0, target)
           animating = false
           cooldownUntil = performance.now() + COOLDOWN
+          syncAnchor()
+          releaseRoot()
         }
       }
       raf = requestAnimationFrame(step)
@@ -104,7 +117,10 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       }
       if (touch.taken && e.cancelable) e.preventDefault()
     }
-    const onTouchEnd = () => { touch = null }
+    const onTouchEnd = () => {
+      touch = null
+      if (!animating) releaseRoot()
+    }
 
     // ── 키보드 ──
     const onKey = (e) => {
@@ -123,8 +139,21 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     }
 
     // ── 안전망: 스크롤바 드래그 등으로 두 화면 '사이'에 멈춘 경우 가까운 쪽으로 붙인다 ──
+    const takeOver = (target) => {
+      // 손가락이 아직 닿아 있으면 기본 스크롤과 위치를 두고 싸우지 않도록 잠시 잠근다(프로그램 스크롤은 그대로 동작)
+      if (touch) document.documentElement.style.overflowY = 'hidden'
+      animateTo(target)
+    }
     const onScroll = () => {
-      if (animating) return
+      if (animating || locked()) return
+      const H = skyH()
+      const y = window.scrollY
+      if (H) {
+        if (y <= 1) anchor = 0
+        else if (y >= H - 1) anchor = 1
+        else if (anchor === 0 && y >= NATIVE_TAKEOVER) { takeOver(H); return } // 별 화면에서 조금만 내려도 사진 화면으로
+        else if (anchor === 1 && y <= H - NATIVE_TAKEOVER) { takeOver(0); return } // 사진 맨 위에서 조금만 올려도 별 화면으로
+      }
       clearTimeout(settleTimer)
       settleTimer = setTimeout(() => {
         if (animating || locked() || touch) return
@@ -135,6 +164,7 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       }, SETTLE_MS)
     }
 
+    syncAnchor()
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('touchstart', onTouchStart, { passive: true })
     window.addEventListener('touchmove', onTouchMove, { passive: false })
@@ -152,6 +182,7 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       window.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(raf)
       clearTimeout(settleTimer)
+      releaseRoot()
     }
   }, [skySelector])
 }
