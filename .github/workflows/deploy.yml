@@ -2,6 +2,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_dispatch: # 수동 재배포 (npm run content:publish 가 사진·메시지를 올린 뒤 이걸로 다시 배포)
 permissions:
   contents: read
   pages: write
@@ -15,12 +16,44 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # 비공개 콘텐츠 저장소(사진·메시지)를 읽는 배포 키가 있는지. 키 내용은 노출하지 않고 'true'/'false' 만 쓴다.
+      HAS_CONTENT_KEY: ${{ secrets.CONTENT_DEPLOY_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
+
+      # 공개 저장소에 허용 목록 밖 이미지가 들어 있으면 여기서 실패(훅을 --no-verify 로 건너뛴 커밋도 잡음).
+      - name: Check no private photos in public repo
+        run: node scripts/check-no-photos.mjs --tracked
+
+      # 사진·메시지 가져오기. 분기:
+      #  - 키 없음  → 이 단계 건너뜀 + 경고, 더미 사진·메시지로 빌드(배포는 계속).
+      #  - 키 있음  → 가져오기. 실패하면 job 실패 → 배포 안 함(이미 올라가 있는 사이트가 더미로 덮이지 않게).
+      # known_hosts 는 actions/checkout 이 GitHub 호스트 키를 내장해 처리. persist-credentials: false 로 키를 남기지 않음.
+      - name: Fetch private content (photos, messages)
+        if: env.HAS_CONTENT_KEY == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: Deopoler/birthday-content
+          ssh-key: ${{ secrets.CONTENT_DEPLOY_KEY }}
+          path: content
+          persist-credentials: false
+      - name: Warn when content key is missing
+        if: env.HAS_CONTENT_KEY != 'true'
+        run: echo "::warning title=사진·메시지 없이 배포::CONTENT_DEPLOY_KEY secret 이 없어 비공개 저장소를 가져오지 않고 더미 사진·메시지로 빌드합니다."
+
       - run: npm ci
       - run: npm run build
+
+      # dist 에는 처리된 WebP 와 빌드 결과만 있어야 한다(원본·.git·messages.json 이 섞이면 실패).
+      - name: Verify dist has no private originals
+        run: |
+          bad=$(find dist \( -name .git -o -name 'messages.json' -o -path 'dist/content*' -o -path 'dist/photos*' \) -print)
+          if [ -n "$bad" ]; then echo "::error::dist 에 들어가면 안 되는 파일: $bad"; exit 1; fi
+          echo "photos in dist: $(find dist/assets -name 'photo-*.webp' | wc -l) webp files"
+
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
       - id: deployment
