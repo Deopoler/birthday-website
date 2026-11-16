@@ -5,10 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node scripts/check-no-photos.mjs --tracked",
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "photos:shrink": "node scripts/photos-shrink.mjs"
+    "prepare": "node scripts/setup-hooks.mjs",
+    "check:photos": "node scripts/check-no-photos.mjs --tracked",
+    "content:init": "node scripts/content-init.mjs",
+    "content:publish": "node scripts/content-publish.mjs"
   },
   "dependencies": {
     "react": "^19.3.1",
