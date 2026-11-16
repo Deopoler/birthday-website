@@ -288,8 +288,9 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
       const L = env.letter
       // 1) 뚜껑이 위로 젖혀져 봉투 뒤쪽으로 넘어간다(편지가 나올 길을 가리지 않게)
       await tween({ dur: 0.8, easing: ease.inOut, update: (k) => { env.flapPivot.rotation.x = -3.42 * k; env.glow.intensity = 0.07 * k } })
-      // 2) 편지가 주머니에서 위로 미끄러져 나온다(주머니 앞판 뒤, 뒷판·뚜껑 앞)
-      await tween({ dur: 0.85, easing: ease.out, update: (k) => { L.position.y = ENV_H * 0.8 * k } })
+      // 2) 편지가 주머니에서 위로 완전히 빠져나온다(주머니 앞판 뒤, 뒷판·뚜껑 앞).
+      //    아랫부분이 주머니 안에 남은 채로 앞으로 나오면 앞판을 뚫고 지나가 겹쳐 보이므로, 끝까지 뽑은 뒤에 움직인다
+      await tween({ dur: 1.0, easing: ease.inOut, update: (k) => { L.position.y = ENV_H * 1.02 * k } })
       if (S.disposed) return
       // 3) 편지만 눈앞으로 다가오고, 봉투는 손에서 아래로 내려가며 사라진다(반투명하게 겹쳐 보이지 않게 따로 움직인다)
       scene.attach(L)

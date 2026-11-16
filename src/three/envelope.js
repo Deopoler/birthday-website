@@ -100,7 +100,7 @@ export function createEnvelope() {
     shapeGeo([[-W / 2, -H / 2], [W / 2, -H / 2], [W / 2, H / 2], [0, notch], [-W / 2, H / 2]], -W / 2, -H / 2, W, H),
     std({ map: pocketT.tex }),
   )
-  pocket.position.z = 0.004
+  pocket.position.z = 0.008 // 겹친 종이 사이 간격은 넉넉히: 휴대폰의 깊이 정밀도에서도 면이 서로 파고들어 보이지 않게
 
   const flapT = canvasTex(512, 320, (g, w, h) => {
     paper(g, w, h, '#efe2c4')
@@ -111,7 +111,7 @@ export function createEnvelope() {
     g.fillRect(0, 0, w, h)
   })
   const flapPivot = new THREE.Group()
-  flapPivot.position.set(0, H / 2, 0.006)
+  flapPivot.position.set(0, H / 2, 0.012)
   const flap = new THREE.Mesh(shapeGeo([[-W / 2, 0], [W / 2, 0], [0, -FLAP_H]], -W / 2, -FLAP_H, W, FLAP_H), std({ map: flapT.tex }))
   flapPivot.add(flap)
 
@@ -153,7 +153,7 @@ export function createEnvelope() {
     new THREE.PlaneGeometry(W * 0.9, H * 0.9),
     new THREE.MeshStandardMaterial({ map: letterT.tex, roughness: 0.85, side: THREE.DoubleSide, emissive: 0xfff0d0, emissiveMap: letterT.tex, emissiveIntensity: 0.42 }),
   )
-  letter.position.z = 0.002
+  letter.position.z = 0.004
 
   // 열릴 때 안에서 새어 나오는 따뜻한 빛
   const glow = new THREE.PointLight(0xffc27a, 0, 2.2, 2)

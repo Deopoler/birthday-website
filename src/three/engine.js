@@ -15,7 +15,7 @@ export function createEngine(canvas) {
   renderer.setClearColor(0x02030a, 1)
 
   const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.05, 1200)
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.12, 1200)
 
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
