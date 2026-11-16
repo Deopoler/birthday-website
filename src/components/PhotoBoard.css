@@ -2,6 +2,7 @@
   position: relative;
   padding: 120px 16px 72px;
   min-height: 100vh;
+  box-sizing: border-box;
   overflow: hidden;
   background-color: #b98a5a;
   background-image:
@@ -27,32 +28,32 @@
   position: relative;
   z-index: 2;
   text-align: center;
-  margin: 0;
+  margin: -10px 0 28px;
   color: #fff6e0;
+  font-size: 0.9rem;
+  opacity: 0.85;
   text-shadow: 0 2px 6px rgba(40, 20, 5, 0.6);
 }
-.pb-sub { font-size: 0.9rem; opacity: 0.85; margin-top: -10px; margin-bottom: 28px; }
 
 .pb-grid {
   position: relative;
   z-index: 2;
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 22px 16px;
 }
-/* 지그재그 */
-.pb-cell:nth-child(even) { margin-top: 36px; }
-.pb-cell:nth-child(odd) { margin-bottom: -36px; }
+
+.pb-cell {
+  position: absolute;
+}
 
 .pb-note {
   display: block;
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 1.18;
+  height: 100%;
   box-sizing: border-box;
-  padding: 8% 8% 0;
+  padding: 7.5% 7.5% 13.5%;
   border: 0;
   background: var(--note);
   background-image: linear-gradient(160deg, rgba(255, 255, 255, 0.35), rgba(0, 0, 0, 0.04));
@@ -66,6 +67,7 @@
   touch-action: manipulation;
 }
 .pb-note:hover { transform: rotate(var(--tilt)) scale(1.03); }
+
 .pb-tape {
   position: absolute;
   top: -9px;
@@ -75,14 +77,42 @@
   transform: translateX(-50%) rotate(-3deg);
   background: rgba(255, 255, 255, 0.55);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+  pointer-events: none;
 }
+
 .pb-photo {
   display: block;
+  position: relative;
   width: 100%;
-  height: 86%; /* 캡션 없이 사진이 포스트잇 대부분을 채우고 아래에 얇은 여백만 남김 */
-  background-size: cover;
-  background-position: center;
+  height: 100%;
+  overflow: hidden;
+}
+.pb-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+}
+
+.pb-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.pb-img-full {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.pb-img-full.is-loaded {
+  opacity: 1;
 }
 
 .pb-overlay { position: fixed; inset: 0; z-index: 100; }
@@ -100,18 +130,13 @@
 }
 .pb-zoom .pb-note {
   height: 100%;
-  aspect-ratio: auto;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
 }
 .pb-zoom .pb-note:hover { transform: none; }
 
-@media (min-width: 700px) {
-  .pb-grid { grid-template-columns: repeat(3, 1fr); gap: 28px 24px; }
-  .pb-cell:nth-child(n) { margin: 0; }
-  .pb-cell:nth-child(even) { margin-top: 32px; }
-}
 @media (prefers-reduced-motion: reduce) {
   .pb-note { transition: none; }
+  .pb-img-full { transition: none; }
 }
 
 /* 키보드 포커스 표시 */
