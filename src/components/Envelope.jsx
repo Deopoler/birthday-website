@@ -3,7 +3,7 @@ import './Envelope.css'
 
 const TITLE = '이하진 순장님의 생일을 축하합니다!'
 
-// 단계: closed → opening(뚜껑 열림 + 편지 올라옴) → leaving(오버레이 아래로 빠짐) → 언마운트
+// 단계: closed → opening(뚜껑 열림 + 편지 살짝 올라옴) → leaving(편지가 위로 떠오르며 시선 이동, 장면은 제자리에서 흐려짐, 하늘은 초점이 맞춰짐) → 언마운트
 export default function Envelope() {
   const [phase, setPhase] = useState('closed')
   const timers = useRef([])
@@ -14,6 +14,7 @@ export default function Envelope() {
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
+      document.documentElement.classList.remove('env-reveal')
     }
   }, [])
 
@@ -22,11 +23,14 @@ export default function Envelope() {
   const open = () => {
     if (phase !== 'closed') return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const openMs = reduce ? 400 : 1900
-    const leaveMs = reduce ? 400 : 1100
+    const openMs = reduce ? 0 : 800
+    const leaveMs = reduce ? 500 : 1400
     setPhase('opening')
     timers.current.push(
-      setTimeout(() => setPhase('leaving'), openMs),
+      setTimeout(() => {
+        document.documentElement.classList.add('env-reveal')
+        setPhase('leaving')
+      }, openMs),
       setTimeout(() => setPhase('done'), openMs + leaveMs),
     )
   }
