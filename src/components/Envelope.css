@@ -1,3 +1,5 @@
+/* 밤의 땅 위에 놓인 봉투를 줍는 인트로. 전체 오버레이는 배경이 투명하고,
+   땅(.Envelope__world)이 그 역할을 하다가 끝에서 아래로 밀려 내려가며 뒤의 밤하늘이 드러난다. */
 .Envelope {
   position: fixed;
   inset: 0;
@@ -6,72 +8,96 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(28px, 7vh, 56px);
+  gap: clamp(64px, 12vh, 110px); /* 편지가 올라올 때 제목을 가리지 않도록 넉넉히 */
   padding: 24px 16px;
-  color: #5a3a22;
+  color: #f4e8d0;
   overflow: hidden;
 }
+.Envelope--leaving { pointer-events: none; }
 
-/* 배경은 제자리에서 페이드 (이동 없음) */
-.Envelope::before {
-  content: '';
+/* ───────── 땅 + 지평선(나무 실루엣) ───────── */
+.Envelope__world {
   position: absolute;
   inset: 0;
-  z-index: -1;
-  background: linear-gradient(180deg, #f6e7d0 0%, #ecd3b0 100%);
+  z-index: 0;
+  will-change: transform;
 }
-.Envelope--leaving { pointer-events: none; }
-.Envelope--leaving::before {
-  animation: env-bg-out 1.6s ease-in-out forwards;
+.Envelope--leaving .Envelope__world {
+  /* 시선이 위로 올라가는 동안 땅이 화면 아래로 지나가 사라진다(지평선 높이 포함) */
+  animation: env-tilt-up 2.2s cubic-bezier(0.55, 0.05, 0.3, 1) forwards;
+}
+.Envelope__ground {
+  position: absolute;
+  inset: 0;
+  background:
+    /* 달빛이 떨어진 자리 */
+    radial-gradient(ellipse 80% 48% at 50% 56%, rgba(255, 244, 205, 0.3), rgba(255, 244, 205, 0) 70%),
+    /* 흙/풀 질감 */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .75 0 0 0 0 .85 0 0 0 0 .7 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #1b2625 0%, #0f161a 100%);
+}
+.Envelope__horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%; /* 땅 위쪽 가장자리에 붙어 있어 처음엔 화면 밖 */
+  height: 150px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='120' preserveAspectRatio='none' viewBox='0 0 200 120'%3E%3Cpath fill='%231b2625' d='M0 120V90l12-30 8 25 14-55 12 50 12-30 12 40 18-70 14 65 14-30 12 37 18-48 14 48 16-26 12 30 12-12v37z'/%3E%3C/svg%3E") repeat-x bottom / 200px 100%;
 }
 
-/* 편지를 제외한 장면은 제자리에서 흐려지며 사라짐 (살짝 뒤로 물러나는 원근만) */
-.Envelope--leaving .Envelope__title,
-.Envelope--leaving .Envelope__front,
-.Envelope--leaving .Envelope__flap,
-.Envelope--leaving .Envelope__hint {
-  animation: env-scene-out 1.3s ease-in-out 0.25s forwards;
-}
-
+/* ───────── 제목 ───────── */
 .Envelope__title {
+  position: relative;
+  z-index: 2;
   margin: 0;
   max-width: 20em;
   text-align: center;
   font-size: clamp(22px, 6vw, 34px);
   line-height: 1.4;
   word-break: keep-all;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+.Envelope--leaving .Envelope__title {
+  animation: env-fade-out 0.9s ease-in forwards;
 }
 
+/* ───────── 봉투 ───────── */
 .Envelope__stage {
   all: unset;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 28px;
   cursor: pointer;
+  perspective: 900px; /* 바닥에 누운 봉투의 기울기를 위한 원근 */
   -webkit-tap-highlight-color: transparent;
 }
 .Envelope__stage:focus-visible .Envelope__body {
-  outline: 3px solid #c0392b;
+  outline: 3px solid #f4e8d0;
   outline-offset: 6px;
 }
 .Envelope__stage:disabled {
   cursor: default;
 }
 
-/* 봉투 */
 .Envelope__body {
   --w: min(80vw, 340px);
   position: relative;
   display: block;
   width: var(--w);
   height: calc(var(--w) * 0.66);
-  perspective: 900px;
-  animation: env-bob 2.4s ease-in-out infinite;
+  perspective: 900px; /* 뚜껑이 열릴 때의 원근 */
+  /* 바닥에 비스듬히 누운 상태 */
+  transform: rotateX(52deg) rotateZ(-11deg) scale(0.82);
+  transition: transform 1s cubic-bezier(0.2, 0.8, 0.25, 1);
 }
+/* 주워 들어올려 정면으로 */
+.Envelope--lift .Envelope__body,
 .Envelope--opening .Envelope__body,
 .Envelope--leaving .Envelope__body {
-  animation: none;
+  transform: rotateX(0deg) rotateZ(0deg) scale(1.06) translateY(-3%);
 }
 
 .Envelope__front,
@@ -91,7 +117,26 @@
     linear-gradient(to top left, transparent 49.5%, rgba(0, 0, 0, 0.08) 50%) right / 50% 100% no-repeat,
     #d9a86c;
   clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%);
-  box-shadow: 0 10px 24px rgba(90, 58, 34, 0.25);
+}
+/* 그림자: 바닥에 있을 땐 바짝 붙고, 들어올리면 넓고 흐리게 떨어진다.
+   clip-path가 box-shadow를 잘라 버리므로 별도 요소(body::before)에 그린다. */
+.Envelope__body::before {
+  content: '';
+  position: absolute;
+  inset: 4% 2% 0;
+  z-index: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  filter: blur(6px);
+  transform: translate(3px, 6px);
+  transition: transform 1s cubic-bezier(0.2, 0.8, 0.25, 1), filter 1s ease, opacity 1s ease;
+}
+.Envelope--lift .Envelope__body::before,
+.Envelope--opening .Envelope__body::before,
+.Envelope--leaving .Envelope__body::before {
+  filter: blur(22px);
+  opacity: 0.55;
+  transform: translate(0, 34px) scale(0.94);
 }
 
 /* 뚜껑 */
@@ -112,7 +157,7 @@
   z-index: 1;
 }
 
-/* 편지 */
+/* 편지: 열리는 동안은 봉투 앞면 '뒤'(z 2)에서 입구로 미끄러져 올라와 z-index 점프가 없다 */
 .Envelope__letter {
   left: 6%;
   width: 88%;
@@ -128,15 +173,13 @@
   transform: translateY(0) rotate(0deg);
   transition: transform 0.95s cubic-bezier(0.22, 0.8, 0.3, 1) 0.5s, box-shadow 0.95s ease 0.5s;
 }
-/* 봉투 입구에서 천천히 미끄러져 올라옴(아직 앞면 뒤에 있어 입구에 가려짐) */
 .Envelope--opening .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
-/* 편지가 위로 떠오르며 작아지고 빛남 → 시선이 위(하늘)로 */
 .Envelope--leaving .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
-  animation: env-letter-up 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: env-letter-up 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 .Envelope__cake {
   /* 편지(봉투 너비의 88%) 안에 케이크 그림을 크게. 그림 파일은 src/assets/cake.svg (png/jpg로 바꿔도 됨) */
@@ -151,12 +194,21 @@
 
 .Envelope__hint {
   font-size: 14px;
-  opacity: 0.75;
-  animation: env-blink 1.6s ease-in-out infinite;
+  opacity: 0.8;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  animation: env-blink 1.8s ease-in-out infinite;
 }
+.Envelope--lift .Envelope__hint,
 .Envelope--opening .Envelope__hint,
 .Envelope--leaving .Envelope__hint {
   visibility: hidden;
+}
+
+/* 편지를 제외한 손에 든 봉투는 고개를 드는 동안 제자리에서 흐려지며 사라진다 */
+.Envelope--leaving .Envelope__front,
+.Envelope--leaving .Envelope__flap,
+.Envelope--leaving .Envelope__body::before {
+  animation: env-hand-out 1.5s ease-in-out 0.3s forwards;
 }
 
 /* 1) 봉투 밖으로 완전히 빠져나옴(아직 앞면 뒤) → 2) 앞으로 나와 살짝 커지며 떠오름 → 3) 작아지고 빛나며 위(하늘)로 */
@@ -167,49 +219,47 @@
     opacity: 1;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   }
-  30% {
+  22% {
     z-index: 2;
     transform: translateY(-104%) rotate(-0.6deg) scale(1);
     opacity: 1;
   }
-  31% { z-index: 5; }
-  50% {
+  23% { z-index: 5; }
+  42% {
     z-index: 5;
     transform: translateY(-112%) rotate(0deg) scale(1.07);
     opacity: 1;
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3);
   }
   80% { opacity: 1; }
   100% {
     z-index: 5;
-    transform: translateY(-48vh) rotate(0deg) scale(0.22);
+    transform: translateY(-52vh) rotate(0deg) scale(0.22);
     opacity: 0;
     box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6);
   }
 }
-@keyframes env-scene-out {
-  to { opacity: 0; filter: blur(10px); transform: scale(0.94); }
+@keyframes env-tilt-up {
+  from { transform: translateY(0); }
+  to { transform: translateY(calc(100% + 160px)); }
 }
-@keyframes env-bg-out {
-  0% { opacity: 1; filter: blur(0); }
-  100% { opacity: 0; filter: blur(12px); }
+@keyframes env-hand-out {
+  to { opacity: 0; filter: blur(8px); }
 }
-/* 뒤의 밤하늘: 위에서 내려오며 초점이 맞춰지듯 드러남 (scroll-snap은 건드리지 않음) */
+@keyframes env-fade-out {
+  to { opacity: 0; }
+}
+/* 뒤의 밤하늘: 고개를 들며 위에서 내려오듯 자리를 잡고 초점이 맞춰진다 */
+.env-reveal .Sky {
+  animation: env-sky-focus 2.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
 @keyframes env-sky-focus {
-  from { filter: blur(8px); transform: translateY(-8%) scale(1.06); }
+  from { filter: blur(6px); transform: translateY(-9%) scale(1.07); }
   to { filter: blur(0); transform: none; }
 }
-.env-reveal .Sky {
-  animation: env-sky-focus 1.7s ease-in-out both;
-}
-
-@keyframes env-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-6px); }
-}
 @keyframes env-blink {
-  0%, 100% { opacity: 0.35; }
-  50% { opacity: 0.85; }
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
 }
 
 @media (min-width: 768px) {
@@ -217,18 +267,18 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .Envelope__body,
   .Envelope__hint { animation: none; }
+  .Envelope__body,
+  .Envelope__body::before,
   .Envelope__flap,
   .Envelope__letter { transition: none; }
-  .Envelope--leaving::before,
+  .Envelope--leaving .Envelope__world,
   .Envelope--leaving .Envelope__title,
   .Envelope--leaving .Envelope__front,
   .Envelope--leaving .Envelope__flap,
-  .Envelope--leaving .Envelope__hint,
+  .Envelope--leaving .Envelope__body::before,
   .Envelope--leaving .Envelope__letter {
-    animation: env-fade 0.5s ease-in-out forwards;
+    animation: env-fade-out 0.5s ease-in-out forwards;
   }
   .env-reveal .Sky { animation: none; }
 }
-@keyframes env-fade { to { opacity: 0; } }
