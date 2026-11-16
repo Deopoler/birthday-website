@@ -17,7 +17,18 @@
 ## 실행 방법 (Herdr)
 - 작업자는 **Herdr의 `hc run`**으로 띄운다. Claude Code의 Agent 도구(서브에이전트)로 대신하지 않는다.
 - 처음 한 번 `herdr-app --skill`, `hc --skill`, `hc run --help`, `hc wait --help`를 읽고 작업자별 정확한 실행 명령·옵션을 확인한 뒤 사용한다.
-- 작업자 명령(`agy`, `codex`)이 이 PC에 없으면(`command -v <이름>`으로 확인) 설치되어 있지 않은 것이다. 그때는 `claude`로 띄운 Claude 작업자가 대신하고, 나에게 어떤 작업자가 없어서 대체했는지 알린다.
+- **작업자 실행 명령 (이 PC, 설치 확인됨)** — 터미널/세션을 다시 시작하기 전에는 PATH에 안 보일 수 있으니(`command -v`가 비어도 "없음"이 아님) **절대 경로**로 실행한다. 새 PATH가 필요하면 `[Environment]::GetEnvironmentVariable('Path','User'/'Machine')`로 확인한다.
+  - agy: `hc run --bg --name <작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto -i "<지시>"` (`-i` = 처음 지시를 주고 대화형으로 계속. `-p`/`--print` 같은 한 번짜리 모드는 쓰지 않는다.)
+  - codex: `hc run --bg --name <작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe --no-daemon "<지시>"` (`--no-daemon` 필수: 없으면 명령이 hc 밖에서 실행됨.)
+  - claude: `hc run --bg --name <작업명> --cwd <worktree> claude "<지시>"` (계획·통합용이 아니라 agy/codex가 한도·에러로 못 할 때의 대체 작업자.)
+  - `--dangerously-skip-permissions` 같은 권한 우회 옵션은 쓰지 않는다. 권한 질문으로 막히면 사용자에게 알린다.
+- **작업자 고르는 법 (지시를 만들기 전에 이 표를 다시 본다)**
+  - 구현·리팩터링·테스트 작성·문서 정리처럼 **양이 많은 일 → agy** (기본값).
+  - **최종 diff 리뷰, 버그 원인 추적**처럼 짧지만 중요한 일 → codex. 한도가 매우 작으니 한 세션에 1~2번. 구현 작업이 끝나 push하기 전/후의 마지막 점검에 쓰는 것이 기본 용도다.
+  - 계획, 작업 분배, 결과 통합, 아주 작은 수정 → 나(메인).
+  - agy/codex가 한도 초과·에러로 멈추면 다른 작업자(claude 포함)에게 넘기고 사용자에게 알린다.
+  - 작업을 띄울 때마다 "무엇을 / 누구에게 / 왜" 한 줄을 사용자에게 알린다.
+- agy가 만든 커밋에는 `Co-Authored-By: Claude …` 줄을 넣지 않는다(Claude가 쓴 커밋이 아니므로). 커밋 작성자는 저장소 git config(GitHub noreply) 그대로.
 - 절차:
   1. 작업마다 `git worktree add ../<repo>-<작업명> -b <작업명>`으로 폴더를 나눈다.
   2. `hc run --bg --name <작업명> --cwd <그 폴더> <작업자 명령> "<구체적인 지시>"`를 실행한다. 긴 지시는 파일에 쓰고 `"$(cat 지시.txt)"`로 넘긴다.
