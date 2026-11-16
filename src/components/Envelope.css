@@ -499,3 +499,53 @@
   }
   .env-reveal .Sky { animation: none; }
 }
+
+/* ───────── 넓은 화면(데스크톱·태블릿): 사진 양옆 띠 없애기 ─────────
+   사진은 폭 560px 로 두고(나무·봉투 위치 관계 유지), 그 뒤 바탕을 같은 사진(tree-night.webp, 같은 에셋 재사용)을
+   크게 키워 흐리게 깐다 → 사진 가장자리가 같은 색·같은 별빛 질감으로 번져 경계가 보이지 않는다. 폭 ≤ 560px(모바일)은 그대로. */
+@media (min-width: 561px) {
+  .Envelope__world::before {
+    left: -80px;
+    right: -80px;
+    bottom: -80px;
+    height: calc(100svh + 90px + 80px);
+    background: #162270 url('../assets/tree-night.webp') 50% calc(100% - 18.2svh - 80px) / 560px auto repeat-x; /* 가운데 사진과 같은 크기로 좌우로 이어 붙임(흐려서 이음새는 안 보임) */
+    filter: blur(48px);
+  }
+  .Envelope__photo {
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 110px), linear-gradient(to right, transparent 0, #000 26%, #000 74%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 110px), linear-gradient(to right, transparent 0, #000 26%, #000 74%, transparent 100%);
+  }
+  /* 풀 전경 양끝도 땅으로 부드럽게 녹인다 */
+  .Envelope__grass {
+    -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0, #000 14%, #000 86%, transparent 100%);
+  }
+}
+
+/* ───────── 가로로 누운 짧은 화면(844x390, 932x430, 667x375 …) ─────────
+   봉투 폭을 화면 높이 기준으로 줄이고, 제목은 위쪽에 작게, 편지가 위로 나와도 제목·화면 위를 넘지 않게 자리를 잡는다.
+   세로 화면·데스크톱은 그대로(이 미디어쿼리 안에서만 바뀜). */
+@media (orientation: landscape) and (max-height: 500px) {
+  .Envelope {
+    padding: 64px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .Envelope__title {
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    width: min(86vw, 30em);
+    font-size: clamp(15px, 4.4svh, 20px);
+    line-height: 1.3;
+  }
+  .Envelope__body { --w: min(36svh, 240px); }
+  .Envelope__stage {
+    gap: 10px;
+    transform: translateY(18svh); /* 바닥에 떨어진 봉투 */
+  }
+  .Envelope--lift .Envelope__stage,
+  .Envelope--opening .Envelope__stage,
+  .Envelope--leaving .Envelope__stage { transform: translateY(0); }
+  .Envelope__hint {
+    transform: translateY(-24px);
+    font-size: 12px;
+  }
+}

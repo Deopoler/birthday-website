@@ -117,3 +117,11 @@
 /* 키보드 포커스 표시 */
 .pb-note:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
 .pb-overlay:focus { outline: none; }
+
+/* 가로로 누운 짧은 화면: 노치·가장자리에 가려지지 않게 좌우 여백에 safe-area 를 더한다 */
+@media (orientation: landscape) and (max-height: 500px) {
+  .PhotoBoard {
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
+}

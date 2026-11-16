@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { messages } from '../data/messages'
-import { constellation, strokeSegments, decorStars, CONSTELLATION_TEXT } from '../data/constellation'
+import { portraitLayout, landscapeLayout, CONSTELLATION_TEXT } from '../data/constellation'
 import './Sky.css'
 
 // 배경 작은 별: 고정 시드 의사난수로 리렌더에도 동일하게 유지
@@ -52,6 +52,21 @@ const placeGlow = (el, r) => {
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+// 가로로 누운 짧은 화면(폰 가로 등)에서는 '이하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.css 의 같은 미디어쿼리와 짝).
+// 별 index 가 두 배치에서 같아서, 화면을 돌려도 열린 별 상태가 그대로 유지된다.
+const LANDSCAPE_Q = '(orientation: landscape) and (max-height: 500px)'
+function useLandscapeCompact() {
+  const [on, setOn] = useState(() => window.matchMedia(LANDSCAPE_Q).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(LANDSCAPE_Q)
+    const h = () => setOn(mq.matches)
+    h()
+    mq.addEventListener('change', h)
+    return () => mq.removeEventListener('change', h)
+  }, [])
+  return on
+}
+
 export default function Sky() {
   const bgStars = useMemo(() => makeBgStars(60), [])
   const [opened, setOpened] = useState([])
@@ -67,6 +82,8 @@ export default function Sky() {
   const anim = useRef(null)
   const phaseRef = useRef('idle')
 
+  const landscape = useLandscapeCompact()
+  const { constellation, strokeSegments, decorStars } = landscape ? landscapeLayout : portraitLayout
   const count = Math.min(messages.length, constellation.length)
   const openSet = new Set(opened)
   const segs = strokeSegments.filter((s) => openSet.has(s.a) && openSet.has(s.b))

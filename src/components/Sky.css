@@ -224,3 +224,20 @@
 /* 키보드 포커스 표시(별빛 링) */
 .Sky-star:focus-visible { outline: 2px solid #fff; outline-offset: 5px; box-shadow: 0 0 14px 6px rgba(190, 210, 255, 0.9); }
 .Sky-close:focus-visible { outline: 2px solid #7a6448; outline-offset: 1px; border-radius: 50%; }
+
+/* ───────── 가로로 누운 짧은 화면(폰 가로: 844x390, 932x430, 667x375 …) ─────────
+   '이하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.jsx 의 useLandscapeCompact 와 같은 조건).
+   별 영역은 높이의 2.1배 폭으로 두어 글자 칸이 정사각형에 가깝게 유지된다. 세로 화면·데스크톱에는 영향 없음. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .Sky-field { width: min(100%, calc(100svh * 2.1)); }
+  .Sky-counter {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    right: calc(14px + env(safe-area-inset-right, 0px));
+  }
+  .Sky-hint {
+    top: calc(12px + env(safe-area-inset-top, 0px));
+    left: calc(14px + env(safe-area-inset-left, 0px));
+  }
+  .Sky-letter { width: min(calc(100vw - 40px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), 340px); }
+  .Sky-text { max-height: 40svh; }
+}
