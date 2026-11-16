@@ -1,1 +1,147 @@
-/* Sky styles */
+.Sky {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #050a24 0%, #14194a 55%, #3a2a5e 100%);
+  color: #fff;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.Sky-bg { position: absolute; inset: 0; }
+.Sky-bgstar {
+  position: absolute;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.3;
+  animation: sky-twinkle 3s ease-in-out infinite;
+}
+@keyframes sky-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+
+/* 별 영역: 데스크톱에서도 세로 비율을 유지하도록 중앙 정렬 */
+.Sky-field {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(100%, 480px);
+  transform: translateX(-50%);
+}
+.Sky-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.Sky-line {
+  stroke: rgba(255, 226, 150, 0.85);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  filter: drop-shadow(0 0 3px rgba(255, 220, 130, 0.9));
+  animation: sky-draw 0.9s ease-out forwards;
+}
+@keyframes sky-draw { to { stroke-dashoffset: 0; } }
+
+.Sky-star {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #fff 0 30%, rgba(190, 210, 255, 0.5) 60%, transparent 72%);
+  box-shadow: 0 0 8px 2px rgba(190, 210, 255, 0.6);
+  cursor: pointer;
+  animation: sky-star-pulse 2.8s ease-in-out infinite;
+}
+/* 터치 영역 확장 */
+.Sky-star::after { content: ''; position: absolute; inset: -14px; }
+@keyframes sky-star-pulse {
+  0%, 100% { box-shadow: 0 0 6px 1px rgba(190, 210, 255, 0.45); }
+  50% { box-shadow: 0 0 12px 4px rgba(190, 210, 255, 0.85); }
+}
+.Sky-star.is-open {
+  background: radial-gradient(circle, #fffbe0 0 30%, rgba(255, 210, 90, 0.75) 62%, transparent 74%);
+  box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8);
+  animation: none;
+}
+.Sky-star.is-active { animation: sky-zoom 0.45s ease-out; z-index: 2; }
+@keyframes sky-zoom {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  60% { transform: translate(-50%, -50%) scale(4); }
+  100% { transform: translate(-50%, -50%) scale(2.4); }
+}
+
+.Sky-counter {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: 14px;
+  padding: 4px 10px;
+  font-size: 13px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffe9a8;
+  backdrop-filter: blur(4px);
+}
+.Sky-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 18px;
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  pointer-events: none;
+  animation: sky-twinkle 3s ease-in-out infinite;
+}
+
+.Sky-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 6, 24, 0.6);
+  animation: sky-fade 0.3s ease-out;
+}
+@keyframes sky-fade { from { opacity: 0; } }
+.Sky-letter {
+  position: relative;
+  width: min(100%, 340px);
+  padding: 30px 24px 22px;
+  color: #4a3a2a;
+  background:
+    repeating-linear-gradient(180deg, transparent 0 27px, rgba(150, 120, 90, 0.25) 27px 28px),
+    #fff8e6;
+  border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(200, 160, 100, 0.2);
+  animation: sky-paper 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes sky-paper {
+  from { opacity: 0; transform: scale(0.1) rotate(-6deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+.Sky-text { margin: 0 0 14px; font-size: 16px; line-height: 28px; word-break: keep-all; max-height: 50svh; overflow-y: auto; }
+.Sky-from { margin: 0; text-align: right; font-size: 15px; font-weight: 600; line-height: 28px; }
+.Sky-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #7a6448;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .Sky *, .Sky-letter { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
+}
