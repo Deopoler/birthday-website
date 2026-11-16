@@ -50,7 +50,7 @@
 | 난이도 | 1순위 | 쿼터 소진 시 대체 (순서대로) | 리뷰 |
 |---|---|---|---|
 | L1 | agy + **Gemini 4 Hydrogen** (목록에 있을 때) / 없으면 `Gemini 3.8 Flash` | ① 둘 중 남은 쪽 ② 지휘자가 직접 처리 (아주 작은 경우만) | 없음 (작업자가 테스트만 돌림) |
-| L2 | `claude --model sonnet` 작업자 (Claude Code, Sonnet 5.5) | ① agy + `Gemini 3.8 Flash` (결과를 더 꼼꼼히 확인) | 핵심 파일이 바뀌었을 때만 리뷰 |
+| L2 | agy + `Gemini 3.8 Flash (High)` (2026-11-16 사용자 변경: L2 작업자를 claude에서 agy로) | ① agy + `Gemini 4 Hydrogen (High)` ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
 | L3 | agy + `Claude Opus 5.5 (Thinking)` | ① agy + `Gemini 4 Argon` ② agy + `Claude Sonnet 5.5 (Thinking)` ③ `claude` 작업자 | **항상** 리뷰 |
 | 리뷰 | codex | agy + 작성자와 **다른 계열** 모델 (아래 규칙) | - |
 
@@ -65,8 +65,8 @@ L3 구현은 Opus가 1순위지만, 아래 작업은 **처음부터 Argon**에�
 ### 모델 쿼터 메모
 
 - 쿼터는 **모델 그룹마다 따로** 줄어든다. Gemini Flash / Gemini 4 Argon / Claude 그룹 중 하나가 바닥나도 다른 그룹은 남아 있을 수 있다.
-- **L2는 Claude Pro 쿼터를 쓴다** (지휘자인 너와 같은 쿼터). 그래서 지휘자는 작업자 출력을 길게 읽지 않고 요약만 받는다.
-  Claude Pro 한도 경고가 뜨거나 한도에 걸리면, 그 시점부터 L2를 agy + `Gemini 3.8 Flash`로 내리고 사용자에게 알린다.
+- **L2는 이제 agy + Gemini 3.8 Flash를 쓴다**(2026-11-16 사용자 변경). Gemini Flash 그룹 쿼터를 쓰고, **Claude Pro 쿼터는 지휘자(나)의 몫으로 아낀다.** Flash 모델이라 결과를 더 꼼꼼히 확인한다(빌드·`git diff`·핵심 시나리오 직접 실행).
+  Gemini Flash 쿼터가 바닥나면 L2를 agy + `Gemini 4 Hydrogen`으로, 그것도 안 되면 `claude --model sonnet`으로 내리고(이때는 Claude Pro 한도 경고에 주의) 사용자에게 알린다.
 - Antigravity 안의 Claude 모델(Opus/Sonnet 5.5)은 L3 전용으로 아낀다. L2에 agy의 Sonnet을 쓰지 않는다.
 - **Antigravity의 Claude Opus 5.5는 쿼터가 작다.** 계획 → 구현 → 수정이 길어지면 금방 바닥나므로, L3 작업은 계획을 먼저 확정한 뒤 한 번에 구현시킨다.
 - **Gemini 4 Argon은 주간 쿼터만 있다** (5시간마다 다시 차지 않음). L2 이하에는 쓰지 않는다.
@@ -77,7 +77,7 @@ L3 구현은 Opus가 1순위지만, 아래 작업은 **처음부터 Argon**에�
 
 - 리뷰는 **코드를 쓴 모델과 다른 계열**이 한다. 같은 모델은 자기 실수를 잘 못 찾는다.
   - Claude가 쓴 코드 (L3) → codex, 안 되면 agy + `Gemini 4 Argon`
-  - Claude가 쓴 코드 (L2) → codex, 안 되면 agy + `Gemini 3.8 Flash`
+  - Claude가 쓴 코드 (L2를 claude로 대체했을 때) → codex, 안 되면 agy + `Gemini 3.8 Flash`
   - Gemini가 쓴 코드 → codex, 안 되면 agy + `Claude Sonnet 5.5 (Thinking)`
 
 ### 실행 템플릿
@@ -189,21 +189,25 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
   - **`--add-dir <worktree>` 필수**: 빼면 자기 작업 폴더 파일을 읽을 때마다 "File access" 권한 질문으로 멈춘다.
   - `--dangerously-skip-permissions` 같은 권한 우회 옵션은 쓰지 않는다. 첫 실행 때 색상 테마·로그인 설정이 필요했고 사용자가 한 번 끝냈다.
 - **codex 실행 형태**: `hc run --bg --name review-<작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe --no-daemon "<지시>"`.
-- **claude(L2) 실행 형태**: `hc run --bg --name l2-<작업명> --cwd <worktree> claude --model sonnet "<지시>"`.
+- **agy(L2) 실행 형태**: `hc run --bg --name l2-<task> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto --add-dir <worktree> --model "Gemini 3.8 Flash (High)" -i "<English prompt>"`.
+- **claude(L2 대체) 실행 형태**: `hc run --bg --name l2-<작업명> --cwd <worktree> claude --model sonnet "<English prompt>"` (agy 쿼터 소진 등으로 대체할 때만).
+- **보고 방식 (사용자 결정, 2026-11-16, 영어로 지시)**: **agy 작업자는 `hc send`를 쓰지 않는다.** agy의 샌드박스가 `hc` 연결을 막아서 `hc send`를 쓰면 매번 사용자 승인 질문(blocked: permission)이 뜬다. 지시문에 이렇게 쓴다: "Do NOT use `hc send`. When you are finished or blocked, write your report as your LAST message in exactly this format and then stop: `SUMMARY:` (max 3 lines) / `FILES CHANGED:` / `VERIFIED:` / `NOT VERIFIED:` / `DECISIONS NEEDED:` (prefix the first line with `[BLOCKED]` if blocked)." 나는 `hc wait` 완료 알림(턴 종료)을 받은 뒤 `hc read --lines 80`으로 그 마지막 보고를 읽는다(codex와 같은 방식).
+  - **L3 계획 먼저(plan-first)**: 작업자는 `PLAN:` 메시지를 마지막 메시지로 쓰고 턴을 끝낸다 → 나는 완료 알림 후 `hc read`로 계획을 읽고 → 승인·수정을 `hc send <작업자 터미널> '<English message>'`로 보낸다 → 작업자가 이어서 구현한다.
+  - Claude 작업자(대체용)는 `hc send t4 '...'`(내 실제 터미널 ID)를 써도 된다.
 - **모델 이름 (2026-11-16 `agy models`로 확인)**: 표시 이름에 노력 단계가 붙는다 — `Gemini 4 Hydrogen (Low/Medium/High/XHigh)`, `Gemini 4 Argon (Low/Medium/High)`, `Gemini 3.8 Flash (Low/Medium/High)`, `Claude Opus 5.5 (Low/Medium/High)`, `Claude Sonnet 5.5 (Low/Medium/High)`, `Orchestrator (Argon)`, `GPT-OSS 120B (Medium)`. 정책에 적힌 `(Thinking)`은 목록에 그 이름으로 없다. **`(Thinking)` = `(High)`로 읽어** `Claude Opus 5.5 (High)` 등을 쓰고(정책의 "실제 이름을 쓴다"), 이 대응을 사용자에게 알렸다. L1은 `Gemini 4 Hydrogen (Medium)`. 모델을 안 정하면 기본값이 Argon이 되니 **agy는 항상 `--model`을 명시**한다.
 - **보고/통합**: 작업자는 push·merge를 하지 않고 **자기 브랜치에 커밋까지만** 한다. 지휘자만 통합(merge)하고, 이 프로젝트에서 미리 허락된 범위(아래)에서 push해 배포한다. 작업자 지시에 이를 명시한다.
 - **알림은 내가 받아서 처리한다(자동 후속 처리)**: 작업자를 띄운 직후 `hc wait --children any --timeout 3600`을 **백그라운드(run_in_background)**로 걸어 둔다. 작업자가 끝나거나 막히면 알림(백그라운드 종료 알림, `<hc>` 메시지)이 오고, 사용자가 시키지 않아도 내가 바로 처리한다:
-  1. 작업자의 `hc send` 요약을 먼저 보고, 필요할 때만 `hc read --lines 60`. 완료 조건을 실제로 확인한다(빌드·커밋·`git diff --stat`).
+  1. 작업자의 마지막 보고(agy는 `hc read --lines 80`으로 읽는 `SUMMARY:` 블록, Claude 작업자는 `hc send` 요약)를 먼저 보고, 필요할 때만 더 읽는다. 완료 조건을 실제로 확인한다(빌드·커밋·`git diff --stat`).
   2. 필요하면 리뷰(codex 등)를 배정하고, 통과하면 내가 main에 통합·push, Actions 성공까지 확인한다.
   3. 끝난 터미널(`hc kill`+`hc rm`), worktree, 이미 main에 들어간 브랜치를 정리한다(허락 범위 안에서).
   4. 사용자에게 §7 형식으로 보고한다(확인한 것/못 한 것 구분). 후속 작업이 필요하면 새 작업자를 띄운다.
   5. 실행 중인 작업자가 남아 있으면 `hc wait`를 다시 건다(한 번 깨어나면 끝나므로 매번 다시 건다).
 - **권한/인증 질문으로 막힌 작업자(`hc` 메시지의 blocked: permission/auth)**: 그 화면에는 내가 대신 답하지 않는다(시스템이 막는다). 사용자에게 어떤 질문인지 알린다.
-- **agy가 만든 커밋**에는 `Co-Authored-By: Claude …` 줄을 넣지 않는다(Claude가 쓴 커밋이 아님). Claude 작업자(L2)나 내가 쓴 커밋에는 넣는다. 커밋 작성자는 저장소 git config(GitHub noreply) 그대로.
+- **agy가 만든 커밋**에는 `Co-Authored-By: Claude …` 줄을 넣지 않는다(Claude가 쓴 커밋이 아님). Claude 작업자(대체 시)나 내가 쓴 커밋에는 넣는다. 커밋 작성자는 저장소 git config(GitHub noreply) 그대로.
 - 작업자가 띄운 dev 서버는 끝날 때 종료시키게 지시한다. `.orchestra/` 는 로컬 기록이므로 `.gitignore`에 둔다.
 - 파일을 바꾸지 않는 아주 사소한 질문(코드 설명, 상태 확인 등)은 메인에서 바로 답해도 된다.
 
-- **동시 4개 운영 기준** (2026-11-16, 사용자 승인 후 내가 권장한 값): 구현 작업자 2~3개 + codex 리뷰·분석 1개. ① 구현 작업자는 서로 겹치지 않는 파일 묶음이 있을 때만 띄운다(묶음 수보다 많이 띄우지 않는다). ② Claude 작업자(L2, 지휘자와 같은 Claude Pro 쿼터)는 동시에 2개까지. ③ agy 작업자 2개까지(Argon은 주간 쿼터라 전용 작업만). ④ codex 리뷰·분석은 1개. ⑤ 권한·인증 질문으로 막혀 사용자 응답을 기다리는 작업자가 2개 이상 쌓이면 새로 띄우지 않고 사용자 응답부터 받는다. ⑥ 끝났는데 아직 통합하지 못한 작업이 2개 이상이면 새 작업을 띄우지 않는다(통합이 병목). 한도를 더 올리거나 줄이는 것은 정책 결정이라 먼저 사용자에게 묻는다.
+- **동시 4개 운영 기준** (2026-11-16, 사용자 승인 후 내가 권장한 값): 구현 작업자 2~3개 + codex 리뷰·분석 1개. ① 구현 작업자는 서로 겹치지 않는 파일 묶음이 있을 때만 띄운다(묶음 수보다 많이 띄우지 않는다). ② agy 작업자(L1·L2·L3)는 동시에 3개까지(모델 그룹별 쿼터가 따로이니 한 모델에 몰리지 않게 분산, Argon은 주간 쿼터라 전용 작업만). ③ Claude 작업자(agy 대체용, 지휘자와 같은 Claude Pro 쿼터)는 동시에 1개까지. ④ codex 리뷰·분석은 1개. ⑤ 권한·인증 질문으로 막혀 사용자 응답을 기다리는 작업자가 2개 이상 쌓이면 새로 띄우지 않고 사용자 응답부터 받는다. ⑥ 끝났는데 아직 통합하지 못한 작업이 2개 이상이면 새 작업을 띄우지 않는다(통합이 병목). 한도를 더 올리거나 줄이는 것은 정책 결정이라 먼저 사용자에게 묻는다.
 
 ### 경험에서 얻은 운영 메모 (확인한 사실만, 확인일 2026-11-16)
 - **보고 대상 ID — `$HC_TERMINAL_ID`를 지시문에 그대로 쓰지 않는다 (2026-11-16 확인, 중요)**: 작업자의 쉘에서 `$HC_TERMINAL_ID`는 **작업자 자신**의 터미널 ID라서, "`hc send $HC_TERMINAL_ID`로 보고"라고 시키면 보고가 작업자 자신에게 되돌아간다(실제로 앞선 작업자들의 완료·계획 보고가 모두 자기 자신에게 돌아갔고, 나는 `hc wait`·`hc read`로 결과를 알았다). §2의 "`$HC_TERMINAL_ID`는 지휘자 자신의 터미널 ID"는 **내가 지시문을 쓸 때 내 쉘의 값으로 치환해서 넣으라**는 뜻이다. 지휘자(나)의 ID는 `echo $HC_TERMINAL_ID`로 확인한다(이 세션은 `t4`). 지시문에는 `hc send t4 '...'`처럼 **실제 ID를 적고**, 작업자에게 승인·수정 답을 받을 ID(작업자 자신의 터미널)가 필요하면 `hc ls`로 확인해서 안다. 그래도 완료·막힘은 시스템이 보내는 알림(`<hc>` 메시지, `hc wait`)으로 받으니 `hc wait`는 계속 건다.
