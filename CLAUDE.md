@@ -18,7 +18,7 @@
 - 작업자는 **Herdr의 `hc run`**으로 띄운다. Claude Code의 Agent 도구(서브에이전트)로 대신하지 않는다.
 - 처음 한 번 `herdr-app --skill`, `hc --skill`, `hc run --help`, `hc wait --help`를 읽고 작업자별 정확한 실행 명령·옵션을 확인한 뒤 사용한다.
 - **작업자 실행 명령 (이 PC, 설치 확인됨)** — 터미널/세션을 다시 시작하기 전에는 PATH에 안 보일 수 있으니(`command -v`가 비어도 "없음"이 아님) **절대 경로**로 실행한다. 새 PATH가 필요하면 `[Environment]::GetEnvironmentVariable('Path','User'/'Machine')`로 확인한다.
-  - agy: `hc run --bg --name <작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto -i "<지시>"` (`-i` = 처음 지시를 주고 대화형으로 계속. `-p`/`--print` 같은 한 번짜리 모드는 쓰지 않는다.)
+  - agy: `hc run --bg --name <작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto --add-dir <worktree> -i "<지시>"` (`-i` = 처음 지시를 주고 대화형으로 계속. `-p`/`--print` 같은 한 번짜리 모드는 쓰지 않는다. **`--add-dir <worktree>` 필수**: 빼면 자기 작업 폴더 파일을 읽을 때마다 "File access" 권한 질문으로 멈춘다. agy는 이 PC에서 첫 실행 때 색상 테마 선택·로그인 설정이 필요했고 사용자가 한 번 끝냈다.)
   - codex: `hc run --bg --name <작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe --no-daemon "<지시>"` (`--no-daemon` 필수: 없으면 명령이 hc 밖에서 실행됨.)
   - claude: `hc run --bg --name <작업명> --cwd <worktree> claude "<지시>"` (계획·통합용이 아니라 agy/codex가 한도·에러로 못 할 때의 대체 작업자.)
   - `--dangerously-skip-permissions` 같은 권한 우회 옵션은 쓰지 않는다. 권한 질문으로 막히면 사용자에게 알린다.
