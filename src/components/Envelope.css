@@ -8,14 +8,29 @@
   justify-content: center;
   gap: clamp(28px, 7vh, 56px);
   padding: 24px 16px;
-  background: linear-gradient(180deg, #f6e7d0 0%, #ecd3b0 100%);
   color: #5a3a22;
   overflow: hidden;
-  transition: transform 1.1s cubic-bezier(0.7, 0, 0.3, 1);
 }
 
-.Envelope--leaving {
-  transform: translateY(100%);
+/* 배경은 제자리에서 페이드 (이동 없음) */
+.Envelope::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, #f6e7d0 0%, #ecd3b0 100%);
+}
+.Envelope--leaving { pointer-events: none; }
+.Envelope--leaving::before {
+  animation: env-bg-out 1.4s ease-in-out forwards;
+}
+
+/* 편지를 제외한 장면은 제자리에서 흐려지며 사라짐 (살짝 뒤로 물러나는 원근만) */
+.Envelope--leaving .Envelope__title,
+.Envelope--leaving .Envelope__front,
+.Envelope--leaving .Envelope__flap,
+.Envelope--leaving .Envelope__hint {
+  animation: env-scene-out 1.2s ease-in-out forwards;
 }
 
 .Envelope__title {
@@ -111,12 +126,17 @@
   background: #fffdf6;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(0);
-  transition: transform 1s cubic-bezier(0.3, 0.9, 0.3, 1) 0.7s;
+  transition: transform 0.8s ease-in-out 0.5s;
 }
-.Envelope--opening .Envelope__letter,
-.Envelope--leaving .Envelope__letter {
+.Envelope--opening .Envelope__letter {
   transform: translateY(-55%);
   z-index: 5;
+}
+/* 편지가 위로 떠오르며 작아지고 빛남 → 시선이 위(하늘)로 */
+.Envelope--leaving .Envelope__letter {
+  z-index: 5;
+  transform: translateY(-55%);
+  animation: env-letter-up 1.4s ease-in-out forwards;
 }
 .Envelope__letterText {
   font-size: 18px;
@@ -133,6 +153,35 @@
   visibility: hidden;
 }
 
+@keyframes env-letter-up {
+  0% {
+    transform: translateY(-55%) scale(1);
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  60% { opacity: 1; }
+  100% {
+    transform: translateY(-48vh) scale(0.22);
+    opacity: 0;
+    box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6);
+  }
+}
+@keyframes env-scene-out {
+  to { opacity: 0; filter: blur(10px); transform: scale(0.94); }
+}
+@keyframes env-bg-out {
+  0% { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; filter: blur(12px); }
+}
+/* 뒤의 밤하늘: 위에서 내려오며 초점이 맞춰지듯 드러남 (scroll-snap은 건드리지 않음) */
+@keyframes env-sky-focus {
+  from { filter: blur(8px); transform: translateY(-8%) scale(1.06); }
+  to { filter: blur(0); transform: none; }
+}
+.env-reveal .Sky {
+  animation: env-sky-focus 1.5s ease-in-out both;
+}
+
 @keyframes env-bob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
@@ -147,21 +196,18 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .Envelope,
-  .Envelope__flap,
-  .Envelope__letter {
-    transition-duration: 0.2s;
-    transition-delay: 0s;
-  }
-  .Envelope--leaving {
-    transform: none;
-    opacity: 0;
-  }
-  .Envelope {
-    transition-property: opacity;
-  }
   .Envelope__body,
-  .Envelope__hint {
-    animation: none;
+  .Envelope__hint { animation: none; }
+  .Envelope__flap,
+  .Envelope__letter { transition: none; }
+  .Envelope--leaving::before,
+  .Envelope--leaving .Envelope__title,
+  .Envelope--leaving .Envelope__front,
+  .Envelope--leaving .Envelope__flap,
+  .Envelope--leaving .Envelope__hint,
+  .Envelope--leaving .Envelope__letter {
+    animation: env-fade 0.5s ease-in-out forwards;
   }
+  .env-reveal .Sky { animation: none; }
 }
+@keyframes env-fade { to { opacity: 0; } }
