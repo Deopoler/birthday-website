@@ -26,8 +26,8 @@ export default function Envelope() {
   const open = () => {
     if (phase !== 'closed') return
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const openMs = reduce ? 0 : 800
-    const leaveMs = reduce ? 500 : 1400
+    const openMs = reduce ? 0 : 1500
+    const leaveMs = reduce ? 500 : 1600
     setPhase('opening')
     timers.current.push(
       setTimeout(() => {

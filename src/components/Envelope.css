@@ -22,7 +22,7 @@
 }
 .Envelope--leaving { pointer-events: none; }
 .Envelope--leaving::before {
-  animation: env-bg-out 1.4s ease-in-out forwards;
+  animation: env-bg-out 1.6s ease-in-out forwards;
 }
 
 /* 편지를 제외한 장면은 제자리에서 흐려지며 사라짐 (살짝 뒤로 물러나는 원근만) */
@@ -30,7 +30,7 @@
 .Envelope--leaving .Envelope__front,
 .Envelope--leaving .Envelope__flap,
 .Envelope--leaving .Envelope__hint {
-  animation: env-scene-out 1.2s ease-in-out forwards;
+  animation: env-scene-out 1.3s ease-in-out 0.25s forwards;
 }
 
 .Envelope__title {
@@ -104,7 +104,7 @@
   background: #c8924f;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   transform-origin: top center;
-  transition: transform 0.7s ease-in-out, z-index 0s 0.35s;
+  transition: transform 0.65s cubic-bezier(0.45, 0.05, 0.25, 1), z-index 0s 0.3s;
 }
 .Envelope--opening .Envelope__flap,
 .Envelope--leaving .Envelope__flap {
@@ -125,18 +125,18 @@
   border-radius: 4px;
   background: #fffdf6;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transform: translateY(0);
-  transition: transform 0.8s ease-in-out 0.5s;
+  transform: translateY(0) rotate(0deg);
+  transition: transform 0.95s cubic-bezier(0.22, 0.8, 0.3, 1) 0.5s, box-shadow 0.95s ease 0.5s;
 }
+/* 봉투 입구에서 천천히 미끄러져 올라옴(아직 앞면 뒤에 있어 입구에 가려짐) */
 .Envelope--opening .Envelope__letter {
-  transform: translateY(-55%);
-  z-index: 5;
+  transform: translateY(-62%) rotate(-1.2deg);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 /* 편지가 위로 떠오르며 작아지고 빛남 → 시선이 위(하늘)로 */
 .Envelope--leaving .Envelope__letter {
-  z-index: 5;
-  transform: translateY(-55%);
-  animation: env-letter-up 1.4s ease-in-out forwards;
+  transform: translateY(-62%) rotate(-1.2deg);
+  animation: env-letter-up 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 .Envelope__letterText {
   font-size: 18px;
@@ -153,15 +153,30 @@
   visibility: hidden;
 }
 
+/* 1) 봉투 밖으로 완전히 빠져나옴(아직 앞면 뒤) → 2) 앞으로 나와 살짝 커지며 떠오름 → 3) 작아지고 빛나며 위(하늘)로 */
 @keyframes env-letter-up {
   0% {
-    transform: translateY(-55%) scale(1);
+    z-index: 2;
+    transform: translateY(-62%) rotate(-1.2deg) scale(1);
     opacity: 1;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
   }
-  60% { opacity: 1; }
+  30% {
+    z-index: 2;
+    transform: translateY(-104%) rotate(-0.6deg) scale(1);
+    opacity: 1;
+  }
+  31% { z-index: 5; }
+  50% {
+    z-index: 5;
+    transform: translateY(-112%) rotate(0deg) scale(1.07);
+    opacity: 1;
+    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.22);
+  }
+  80% { opacity: 1; }
   100% {
-    transform: translateY(-48vh) scale(0.22);
+    z-index: 5;
+    transform: translateY(-48vh) rotate(0deg) scale(0.22);
     opacity: 0;
     box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6);
   }
@@ -179,7 +194,7 @@
   to { filter: blur(0); transform: none; }
 }
 .env-reveal .Sky {
-  animation: env-sky-focus 1.5s ease-in-out both;
+  animation: env-sky-focus 1.7s ease-in-out both;
 }
 
 @keyframes env-bob {
