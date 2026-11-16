@@ -22,54 +22,32 @@ const CLOSE_MS = 560
 const OPEN_EASE = 'cubic-bezier(0.2, 0.7, 0.2, 1)' // ease-out
 const CLOSE_EASE = 'cubic-bezier(0.6, 0, 0.8, 0.4)' // ease-in
 
-const rectStyle = (r) => ({
-  left: `${r.left}px`,
-  top: `${r.top}px`,
-  width: `${r.width}px`,
-  height: `${r.height}px`,
-})
-
 const lerp = (a, b, t) => a + (b - a) * t
 
-// 별(점) → 가로로 퍼진 띠 → 편지지 카드. FLIP: 별의 rect에서 카드 최종 rect까지 보간
+// 별(점) → 가로로 퍼진 띠 → 편지지 카드. FLIP: 카드는 항상 최종 크기/위치로 레이아웃되어 있고,
+// 별 rect → 띠 → 최종 rect 를 transform(translate+scale)으로만 보간한다(left/top/width/height 애니메이션은
+// 매 프레임 레이아웃을 일으켜 저사양에서 끊겼다). 빛 번짐/그림자는 .Sky-letter 의 ::after/::before 레이어가 opacity 로 처리.
 function morphFrames(from, to) {
   const cx = from.left + from.width / 2
   const cy = from.top + from.height / 2
   const tx = to.left + to.width / 2
   const ty = to.top + to.height / 2
   const bandH = 6
-  const band = {
-    left: lerp(cx, tx, 0.4) - to.width / 2,
-    top: lerp(cy, ty, 0.4) - bandH / 2,
-    width: to.width,
-    height: bandH,
-  }
+  const at = (cxx, cyy, w, h) =>
+    `translate(${(cxx - tx - to.width / 2).toFixed(2)}px, ${(cyy - ty - to.height / 2).toFixed(2)}px) scale(${(w / to.width).toFixed(4)}, ${(h / to.height).toFixed(4)})`
   return [
-    {
-      offset: 0,
-      transform: 'none',
-      ...rectStyle(from),
-      borderRadius: '50%',
-      backgroundColor: '#fffbe0',
-      boxShadow: '0 0 14px 5px rgba(255, 200, 80, 0.8)',
-    },
-    {
-      offset: 0.38,
-      transform: 'none',
-      ...rectStyle(band),
-      borderRadius: '6px',
-      backgroundColor: '#fff3c4',
-      boxShadow: '0 0 16px 4px rgba(255, 215, 120, 0.7)',
-    },
-    {
-      offset: 1,
-      transform: 'none',
-      ...rectStyle(to),
-      borderRadius: '6px',
-      backgroundColor: '#fff8e6',
-      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(200, 160, 100, 0.2)',
-    },
+    { offset: 0, transform: at(cx, cy, from.width, from.height), borderRadius: '50%', backgroundColor: '#fffbe0' },
+    { offset: 0.38, transform: at(lerp(cx, tx, 0.4), lerp(cy, ty, 0.4), to.width, bandH), borderRadius: '6px', backgroundColor: '#fff3c4' },
+    { offset: 1, transform: at(tx, ty, to.width, to.height), borderRadius: '6px', backgroundColor: '#fff8e6' },
   ]
+}
+
+const placeGlow = (el, r) => {
+  if (!el) return
+  el.style.left = `${r.left}px`
+  el.style.top = `${r.top}px`
+  el.style.width = `${r.width}px`
+  el.style.height = `${r.height}px`
 }
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -82,6 +60,7 @@ export default function Sky() {
   const [reborn, setReborn] = useState(null) // 닫힌 뒤 다시 반짝일 별
   const skyRef = useRef(null)
   const cardRef = useRef(null)
+  const glowRef = useRef(null)
   const starRect = useRef(null)
   const anim = useRef(null)
   const phaseRef = useRef('idle')
@@ -110,9 +89,12 @@ export default function Sky() {
     const card = cardRef.current
     const to = card.getBoundingClientRect()
     anim.current?.cancel()
+    placeGlow(glowRef.current, starRect.current)
     const a = reducedMotion()
       ? card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 250, easing: 'ease-out' })
       : card.animate(morphFrames(starRect.current, to), { duration: OPEN_MS, easing: OPEN_EASE })
+    // 별의 빛 번짐은 카드가 별 크기에서 벗어나는 동안만 남았다가(opacity) 사라진다. 카드와 따로 둔 작은 레이어
+    glowRef.current?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: OPEN_MS * 0.38, easing: 'ease-out', fill: 'forwards' })
     anim.current = a
     a.onfinish = () => {
       a.cancel() // 이후는 CSS 중앙 정렬이 이어받음(리사이즈 대응)
@@ -128,6 +110,7 @@ export default function Sky() {
     const idx = active
     go('closing')
     let a
+    placeGlow(glowRef.current, star.getBoundingClientRect())
     if (reducedMotion()) {
       a = card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: 'forwards' })
     } else {
@@ -137,6 +120,9 @@ export default function Sky() {
         direction: 'reverse',
         fill: 'forwards',
       })
+    }
+    if (!reducedMotion()) {
+      glowRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CLOSE_MS * 0.38, delay: CLOSE_MS * 0.62, easing: 'ease-in', fill: 'both' })
     }
     anim.current = a
     a.onfinish = () => {
@@ -199,7 +185,10 @@ export default function Sky() {
 
           <svg className="Sky-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {segs.map((s) => (
-              <path key={`${s.a}-${s.b}`} className="Sky-line" d={s.d} pathLength="1" fill="none" />
+              <g key={`${s.a}-${s.b}`}>
+                <path className="Sky-line Sky-line-glow" d={s.d} pathLength="1" fill="none" />
+                <path className="Sky-line" d={s.d} pathLength="1" fill="none" />
+              </g>
             ))}
           </svg>
 
@@ -225,6 +214,7 @@ export default function Sky() {
       {msg && (
         <>
           <div className={`Sky-overlay is-${phase}`} onClick={close} role="presentation" />
+          <div ref={glowRef} className="Sky-glow" aria-hidden="true" />
           <div ref={cardRef} className={`Sky-letter is-${phase}`} role="dialog" aria-modal="true">
             <button type="button" className="Sky-close" onClick={close} aria-label="닫기">
               ×

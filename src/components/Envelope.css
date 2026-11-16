@@ -1,6 +1,7 @@
 /* 밤의 땅 위에 놓인 봉투를 줍는 인트로. 전체 오버레이는 배경이 투명하고,
    땅(.Envelope__world)이 그 역할을 하다가 끝에서 아래로 밀려 내려가며 뒤의 밤하늘이 드러난다. */
 .Envelope {
+  --env-lift-ease: cubic-bezier(0.2, 0.8, 0.25, 1); /* 줍기·들어올리기: 부드러운 ease-out */
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -246,16 +247,15 @@
   z-index: 0;
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.55);
-  filter: blur(6px);
-  transform: translate(3px, 6px);
-  transition: transform 1s cubic-bezier(0.2, 0.8, 0.25, 1), filter 1s ease, opacity 1s ease;
+  filter: blur(12px); /* 번짐 정도는 애니메이션하지 않는다(filter 전환은 매 프레임 다시 그려짐). 움직임·농도는 transform/opacity 만 */
+  transform: translate(3px, 6px) scale(1);
+  transition: transform 1s var(--env-lift-ease), opacity 1s var(--env-lift-ease);
 }
 .Envelope--lift .Envelope__body::before,
 .Envelope--opening .Envelope__body::before,
 .Envelope--leaving .Envelope__body::before {
-  filter: blur(22px);
-  opacity: 0.55;
-  transform: translate(0, 34px) scale(0.94);
+  opacity: 0.5;
+  transform: translate(0, 34px) scale(1.04, 0.96);
 }
 
 /* 뚜껑: 닫혀 있을 땐 아이보리 바깥면, 열려서 뒤집히면(0.3초 뒤) 분홍 땡땡이 안쪽면 */
@@ -346,12 +346,11 @@
   background: #fffdf6;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   transform: translateY(0) rotate(0deg);
-  transition: transform 0.95s cubic-bezier(0.22, 0.8, 0.3, 1) 0.5s, box-shadow 0.95s ease 0.5s;
+  transition: transform 0.95s cubic-bezier(0.22, 0.8, 0.3, 1) 0.5s;
   will-change: transform, opacity; /* 처음부터 자기 레이어로 올려 두어, 열릴 때·떠오를 때 레이어 승격으로 깜빡이지 않게 */
 }
 .Envelope--opening .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 .Envelope--leaving .Envelope__letter {
   transform: translateY(-62%) rotate(-1.2deg);
@@ -359,8 +358,21 @@
      z-index는 보간하지 않고(step-end) 한 번에 바꾼다: 2→3→4→5로 지나가며 앞면(z 3)과 같은 값에서 가려지는 프레임이 없도록 */
   animation:
     env-letter-up 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
-    env-letter-glow 3s cubic-bezier(0.4, 0, 0.2, 1) forwards,
     env-letter-z 3s step-end forwards;
+}
+/* 떠오를 때의 빛: box-shadow 를 애니메이션하는 대신(매 프레임 큰 번짐을 다시 그림) 정적인 빛 레이어의 opacity 만 올린다 */
+.Envelope__letter::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 4px;
+  box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+.Envelope--leaving .Envelope__letter::before {
+  animation: env-letter-glow 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 /* 편지 안: 케이크 이모지 + 축하 문구 */
 .Envelope__emoji {
@@ -421,9 +433,8 @@
   100% { transform: translateY(-52vh) rotate(0deg) scale(0.22); opacity: 0; }
 }
 @keyframes env-letter-glow {
-  0% { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18); }
-  42% { box-shadow: 0 18px 34px rgba(0, 0, 0, 0.3); }
-  100% { box-shadow: 0 0 28px 14px rgba(255, 244, 200, 0.95), 0 0 80px 40px rgba(255, 230, 160, 0.6); }
+  0%, 30% { opacity: 0; }
+  100% { opacity: 1; }
 }
 /* 22%까지는 앞면 뒤(z 2)에서 올라오고, 완전히 빠져나온 뒤(23%)부터 앞(z 5) */
 @keyframes env-letter-z {
@@ -449,7 +460,7 @@
   45%, 60% { opacity: 1; }
 }
 @keyframes env-hand-out {
-  to { opacity: 0; filter: blur(8px); }
+  to { opacity: 0; }
 }
 @keyframes env-fade-out {
   to { opacity: 0; }
@@ -459,8 +470,8 @@
   animation: env-sky-focus 3s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes env-sky-focus {
-  from { filter: blur(6px); transform: translateY(-9%) scale(1.07); }
-  to { filter: blur(0); transform: none; }
+  from { transform: translateY(-9%) scale(1.07); }
+  to { transform: none; }
 }
 @keyframes env-blink {
   0%, 100% { opacity: 0.45; }

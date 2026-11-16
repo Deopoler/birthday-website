@@ -54,7 +54,8 @@ export default function Envelope() {
         document.documentElement.classList.add('env-reveal')
         setPhase('leaving')
       }, t.lift + t.open),
-      setTimeout(() => setPhase('done'), t.lift + t.open + t.leave),
+      // 끝은 CSS 애니메이션이 알려 준다(아래 onAnimationEnd). 타이머는 애니메이션이 못 도는 경우(탭 비활성 등)의 안전망일 뿐이라 넉넉히 둔다
+      setTimeout(() => setPhase('done'), t.lift + t.open + t.leave + 1500),
     )
   }
 
@@ -63,7 +64,11 @@ export default function Envelope() {
   return (
     <section className={`Envelope Envelope--${phase}`} aria-label="생일 초대장">
       {/* 은하수 아래 언덕 위의 나무 한 그루(사진) + 어두운 풀밭. 끝에서 아래로 밀려 내려가며(= 시선이 나무를 타고 올라가며) 별자리 하늘이 드러난다 */}
-      <div className="Envelope__world" aria-hidden="true">
+      <div
+        className="Envelope__world"
+        aria-hidden="true"
+        onAnimationEnd={(e) => e.target === e.currentTarget && setPhase('done')}
+      >
         <img className="Envelope__photo" src={treeNight} alt="" draggable="false" />
         <div className="Envelope__ground" />
         <img className="Envelope__grass" src={ground} alt="" draggable="false" />

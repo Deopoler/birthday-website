@@ -62,9 +62,10 @@
   stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  filter: drop-shadow(0 0 3px rgba(255, 220, 130, 0.9));
-  animation: sky-draw 0.9s ease-out forwards;
+  animation: sky-draw 0.9s cubic-bezier(0.3, 0.1, 0.3, 1) forwards;
 }
+/* 빛 번짐: drop-shadow 필터(매 프레임 다시 계산) 대신 굵고 옅은 같은 획을 한 겹 더 그린다 */
+.Sky-line-glow { stroke: rgba(255, 220, 130, 0.28); stroke-width: 7; }
 @keyframes sky-draw { to { stroke-dashoffset: 0; } }
 
 .Sky-star {
@@ -76,29 +77,40 @@
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background: radial-gradient(circle, #fff 0 30%, rgba(190, 210, 255, 0.5) 60%, transparent 72%);
-  box-shadow: 0 0 8px 2px rgba(190, 210, 255, 0.6);
+  box-shadow: 0 0 6px 1px rgba(190, 210, 255, 0.5);
   cursor: pointer;
+}
+/* 반짝임: box-shadow 를 애니메이션하면 별마다 매 프레임 다시 그려지므로, 정적인 빛 번짐 레이어(::before)의 opacity 만 바꾼다 */
+.Sky-star::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 12px 4px rgba(190, 210, 255, 0.85);
+  opacity: 0;
+  pointer-events: none;
   animation: sky-star-pulse 2.8s ease-in-out infinite;
+  animation-delay: inherit;
 }
 /* 터치 영역 확장 */
 .Sky-star::after { content: ''; position: absolute; inset: -14px; }
 @keyframes sky-star-pulse {
-  0%, 100% { box-shadow: 0 0 6px 1px rgba(190, 210, 255, 0.45); }
-  50% { box-shadow: 0 0 12px 4px rgba(190, 210, 255, 0.85); }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 .Sky-star.is-open {
   background: radial-gradient(circle, #fffbe0 0 30%, rgba(255, 210, 90, 0.75) 62%, transparent 74%);
   box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8);
-  animation: none;
 }
+.Sky-star.is-open::before, .Sky-star.is-active::before { animation: none; opacity: 0; }
 .Sky-star { touch-action: pan-y; }
 /* 카드로 변해 있는 동안 별 자리는 비움(카드가 그 별) */
-.Sky-star.is-active { opacity: 0; animation: none; }
+.Sky-star.is-active { opacity: 0; }
 .Sky-star.is-reborn { animation: sky-reborn 0.9s ease-out; }
 @keyframes sky-reborn {
-  0% { transform: translate(-50%, -50%) scale(0.4); box-shadow: 0 0 4px 1px rgba(255, 200, 80, 0.4); }
-  40% { transform: translate(-50%, -50%) scale(1.7); box-shadow: 0 0 22px 9px rgba(255, 220, 120, 1); }
-  100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8); }
+  0% { transform: translate(-50%, -50%) scale(0.4); }
+  40% { transform: translate(-50%, -50%) scale(1.7); }
+  100% { transform: translate(-50%, -50%) scale(1); }
 }
 .Sky-counter {
   position: absolute;
@@ -128,14 +140,25 @@
   inset: 0;
   z-index: 5;
   background: rgba(3, 6, 24, 0.55);
-  -webkit-backdrop-filter: blur(3px);
-  backdrop-filter: blur(3px);
+  /* backdrop-filter: blur 는 페이드되는 동안 매 프레임 뒤 화면 전체를 다시 흐리므로 쓰지 않고, 조금 더 어둡게 눌러 대신한다 */
+  background: rgba(3, 6, 24, 0.62);
   opacity: 0;
-  transition: opacity 0.5s ease-out;
+  transition: opacity 0.5s var(--ease-out, cubic-bezier(0.2, 0.7, 0.2, 1));
   touch-action: none;
 }
 .Sky-overlay.is-opening, .Sky-overlay.is-open { opacity: 1; }
-.Sky-overlay.is-closing { opacity: 0; transition: opacity 0.5s ease-in; }
+.Sky-overlay.is-closing { opacity: 0; transition: opacity 0.5s cubic-bezier(0.6, 0, 0.8, 0.4); }
+
+/* 별 → 카드로 변하는 동안 별 자리에 남는 빛 번짐(카드와 별개의 작은 레이어, opacity 만 변함) */
+.Sky-glow {
+  position: fixed;
+  z-index: 5;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe0 0 30%, rgba(255, 210, 90, 0.75) 62%, transparent 74%);
+  box-shadow: 0 0 14px 5px rgba(255, 200, 80, 0.8);
+  opacity: 0;
+  pointer-events: none;
+}
 
 /* 편지지 카드: 최종 위치는 CSS(중앙). 열기/닫기 모프는 JS(WAAPI)가 rect를 보간 */
 .Sky-letter {
@@ -153,6 +176,7 @@
   border-radius: 6px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(200, 160, 100, 0.2);
   touch-action: none;
+  transform-origin: 50% 50%;
 }
 /* 줄 간격 + 접힌 느낌의 가로 접힘선 */
 .Sky-letter::before {
