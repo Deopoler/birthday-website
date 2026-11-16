@@ -24,7 +24,7 @@ export const messages = [
 
 ## 2. 사진 바꾸기 — `public/photos/` + `src/data/photos.js`
 
-1. 사진을 `public/photos/` 폴더에 넣어요(폴더가 없으면 만드세요). 파일명은 영문·숫자만, 예: `01.jpg`, `02.jpg`.
+1. 사진을 `public/photos/` 폴더에 넣어요(폴더는 이미 만들어져 있어요). 파일명은 영문·숫자만, 예: `01.jpg`, `02.jpg`.
 2. `src/data/photos.js`를 아래처럼 바꿔요. `src`는 `./photos/파일명`, `color`는 사진이 뜨기 전 잠깐 보이는 배경색이에요.
 
 ```js
