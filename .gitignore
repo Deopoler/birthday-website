@@ -24,3 +24,6 @@ dist-ssr
 *.sw?
 node_modules
 dist
+
+# 지휘자 배정 기록(로컬 전용)
+.orchestra/
