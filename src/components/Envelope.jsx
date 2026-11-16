@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import cake from '../assets/cake.svg'
+import cake from '../assets/cake.webp'
 import treeNight from '../assets/tree-night.webp'
 import ground from '../assets/ground.svg'
 import './Envelope.css'
@@ -98,8 +98,11 @@ export default function Envelope() {
           <span className="Envelope__letter">
             <img className="Envelope__cake" src={cake} alt="생일 케이크" draggable="false" />
           </span>
-          <span className="Envelope__front" />
+          <span className="Envelope__front">
+            <span className="Envelope__to">To. 하진 순장님께</span>
+          </span>
           <span className="Envelope__flap" />
+          <span className="Envelope__seal" />
           {/* 봉투 모서리에 얹힌 낙엽: 주워 올리면 미끄러져 떨어진다 */}
           <svg className="Envelope__leaf" viewBox="0 0 60 36" aria-hidden="true">
             <path d="M2 18 Q22 -2 58 18 Q22 38 2 18Z" fill="#8b5a2a" />
