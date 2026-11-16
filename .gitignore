@@ -27,3 +27,7 @@ dist
 
 # 지휘자 배정 기록(로컬 전용)
 .orchestra/
+
+# Photos pipeline
+photos-originals/
+.cache/

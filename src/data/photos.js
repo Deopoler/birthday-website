@@ -1,9 +1,8 @@
-// 사진 보드 데이터. 실제 사진은 public/photos/ 폴더(이미 만들어져 있음)에 넣고 src에 './photos/파일명'으로 적는다.
-// 사진은 긴 변 1200px, 500KB 이하로 줄여서 넣는 것을 권장(자세한 방법은 README.md).
-// 지금은 색상 더미(src가 없으면 color 배경으로 표시).
-const colors = ['#f9c6d0', '#c6e2f9', '#d4f0c0', '#fde9a9', '#e0cdf5', '#ffd5b0']
-export const photos = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  src: null,
-  color: colors[i % colors.length],
-}))
+// 사진 보드 데이터.
+// 이 파일을 직접 편집할 필요가 없습니다.
+// 저장소 루트의 photos/ 폴더에 사진 파일을 넣으면 빌드·개발 서버가 자동으로 목록을 만들고 크기를 줄여 불러옵니다.
+// photos/ 폴더가 비어 있으면 dummyPhotos(색상 더미)를 대신 표시합니다. 자세한 사용법은 README.md 참고.
+import { photos as realPhotos } from 'virtual:photos'
+import { dummyPhotos } from './dummyPhotos'
+
+export const photos = realPhotos.length > 0 ? realPhotos : dummyPhotos
