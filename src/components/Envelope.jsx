@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import cake from '../assets/cake.svg'
+import forest from '../assets/forest.svg'
 import './Envelope.css'
 
 const TITLE = '이하진 순장님의 생일을 축하합니다!'
@@ -10,8 +11,19 @@ const TITLE = '이하진 순장님의 생일을 축하합니다!'
 //  opening : 뚜껑이 열리고 편지(케이크)가 봉투에서 미끄러져 나옴
 //  leaving : 편지가 위로 떠오르고, 땅과 나무 실루엣이 아래로 밀려 내려가며(= 카메라가 위로 올라감) 밤하늘이 드러남
 //  done    : 언마운트
-const T = { lift: 1000, open: 1500, leave: 2200 }
+const T = { lift: 1000, open: 1500, leave: 3000 }
 const T_REDUCED = { lift: 0, open: 0, leave: 500 }
+
+// 나뭇잎 사이로 새어 든 달빛 얼룩(왼쪽 %, 바닥에서 높이 vh, 크기 vw, 번쩍임 주기 s / 지연 s)
+const DAPPLES = [
+  [8, 10, 34, 7, 0], [62, 6, 40, 9, 1.4], [78, 24, 26, 6, 3], [18, 31, 30, 8, 2.2],
+  [44, 46, 36, 10, 0.6], [86, 52, 24, 7.5, 4], [6, 58, 28, 9, 1], [54, 18, 22, 6.5, 2.8],
+]
+// 반딧불이(왼쪽 %, 바닥에서 높이 vh, 크기 px, 이동 주기 s / 지연 s)
+const FIREFLIES = [
+  [14, 14, 4, 11, 0], [30, 26, 3, 9, 2], [72, 20, 4, 13, 1], [84, 38, 3, 10, 3.5],
+  [22, 44, 3, 12, 0.5], [60, 52, 4, 9.5, 4.2], [48, 10, 3, 14, 2.6], [90, 8, 3, 8.5, 1.2],
+]
 
 export default function Envelope() {
   const [phase, setPhase] = useState('closed')
@@ -53,8 +65,22 @@ export default function Envelope() {
     <section className={`Envelope Envelope--${phase}`} aria-label="생일 초대장">
       {/* 카메라가 내려다보고 있는 땅. 끝에서 아래로 밀려 내려가며 하늘이 드러난다 */}
       <div className="Envelope__world" aria-hidden="true">
-        <div className="Envelope__horizon" />
-        <div className="Envelope__ground" />
+        <img className="Envelope__scene" src={forest} alt="" draggable="false" />
+        <div className="Envelope__moon" />
+        {DAPPLES.map(([x, y, size, dur, delay], i) => (
+          <i
+            key={`d${i}`}
+            className="Envelope__dapple"
+            style={{ left: `${x}%`, bottom: `${y}svh`, '--sz': `${size}vw`, '--dur': `${dur}s`, '--delay': `${delay}s`, '--rot': `${(i * 37) % 60 - 30}deg` }}
+          />
+        ))}
+        {FIREFLIES.map(([x, y, size, dur, delay], i) => (
+          <i
+            key={`f${i}`}
+            className="Envelope__firefly"
+            style={{ left: `${x}%`, bottom: `${y}svh`, '--sz': `${size}px`, '--dur': `${dur}s`, '--delay': `${delay}s`, '--dx': `${i % 2 ? 22 : -26}px`, '--dy': `${i % 3 ? -34 : 28}px` }}
+          />
+        ))}
       </div>
 
       <h1 className="Envelope__title">{TITLE}</h1>
@@ -72,6 +98,12 @@ export default function Envelope() {
           </span>
           <span className="Envelope__front" />
           <span className="Envelope__flap" />
+          {/* 봉투 모서리에 얹힌 낙엽: 주워 올리면 미끄러져 떨어진다 */}
+          <svg className="Envelope__leaf" viewBox="0 0 60 36" aria-hidden="true">
+            <path d="M2 18 Q22 -2 58 18 Q22 38 2 18Z" fill="#8b5a2a" />
+            <path d="M6 18 Q24 6 50 18 Q24 28 6 18Z" fill="#fff" opacity=".08" />
+            <path d="M2 18 L58 18" stroke="#2a1809" strokeWidth="1" opacity=".7" />
+          </svg>
         </span>
         <span className="Envelope__hint">바닥의 봉투를 주워 보세요</span>
       </button>
