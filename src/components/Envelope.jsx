@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import cake from '../assets/cake.svg'
 import './Envelope.css'
 
 const TITLE = '이하진 순장님의 생일을 축하합니다!'
@@ -53,7 +54,7 @@ export default function Envelope() {
       >
         <span className="Envelope__body">
           <span className="Envelope__letter">
-            <span className="Envelope__letterText" role="img" aria-label="생일 케이크">🎂</span>
+            <img className="Envelope__cake" src={cake} alt="생일 케이크" draggable="false" />
           </span>
           <span className="Envelope__front" />
           <span className="Envelope__flap" />

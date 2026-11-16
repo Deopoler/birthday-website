@@ -138,10 +138,15 @@
   transform: translateY(-62%) rotate(-1.2deg);
   animation: env-letter-up 1.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-.Envelope__letterText {
-  /* 편지(봉투 너비의 88%) 안에 케이크만 크게 */
-  font-size: calc(var(--w) * 0.4);
-  line-height: 1;
+.Envelope__cake {
+  /* 편지(봉투 너비의 88%) 안에 케이크 그림을 크게. 그림 파일은 src/assets/cake.svg (png/jpg로 바꿔도 됨) */
+  display: block;
+  width: 62%;
+  height: auto;
+  max-height: 86%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 .Envelope__hint {
