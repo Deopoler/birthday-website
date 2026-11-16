@@ -245,6 +245,7 @@ export default function Sky() {
         ★ {opened.length} / {count}
       </div>
       {opened.length === 0 && <p className="Sky-hint" inert={active != null}>별을 눌러 메시지를 열어보세요</p>}
+      <p className="Sky-scroll">아래로 스크롤해 보세요<span aria-hidden="true">⌄</span></p>
 
       {msg && (
         <>

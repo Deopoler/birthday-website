@@ -134,6 +134,30 @@
   animation: sky-twinkle 3s ease-in-out infinite;
 }
 
+/* 화면 맨 아래 안내: 아래에 사진 화면이 있음을 알린다(별자리 맨 아래 줄보다 아래에 작게) */
+.Sky-scroll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(9px + env(safe-area-inset-bottom, 0px));
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.72);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: sky-scroll-nudge 1.8s ease-in-out infinite;
+}
+.Sky-scroll span { font-size: 15px; line-height: 0.6; transform: translateY(-3px); }
+@keyframes sky-scroll-nudge {
+  0%, 100% { transform: translateY(0); opacity: 0.55; }
+  50% { transform: translateY(3px); opacity: 1; }
+}
+
 /* 배경 하늘: 살짝 어두워지고 흐려지기만 함 */
 .Sky-overlay {
   position: absolute;
