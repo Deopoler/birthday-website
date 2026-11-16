@@ -17,6 +17,16 @@ const TOUCH_SLOP = 3 // 터치로 이만큼(px) 끌면 의도로 본다
 const NATIVE_TAKEOVER = 10
 const SETTLE_MS = 140
 
+// ── 사진 → 별 화면으로 올라갈 때의 '걸림' ──
+// 사진 화면 안쪽에서 시작한 한 번의 스크롤 동작(휠 연속/손가락 한 번 끌기/키 누르고 있기)은 사진 화면 맨 위(= Sky 높이)에서 멈추고,
+// 별 화면으로 넘어가려면 '새 동작'을 한 번 더 해야 한다. 사진 맨 위에서 시작한 동작은 걸림 없이 바로 별 화면으로 간다.
+const EDGE = 2 // 사진 맨 위로 보는 오차(px). 이 안에서 시작한 동작은 '맨 위에서 시작'
+const WHEEL_GAP = 220 // 마지막 휠 이벤트 후 이만큼(ms) 쉬면 새 동작(트랙패드 관성 이벤트는 간격이 짧아 같은 동작으로 묶인다)
+const MOMENTUM_GUARD = 450 // 손가락을 뗀 뒤 이만큼(ms) 동안은 남은 관성 스크롤이 걸림 선을 넘지 못하게 되돌린다
+const KEY_TAIL = 150 // 키를 뗀 뒤 이만큼(ms)까지 브라우저의 부드러운 스크롤 꼬리를 같은 동작으로 본다
+const NUDGE_PX = 3 // 걸리는 순간 사진 화면이 살짝 눌렸다 돌아오는 정도(px)
+const NUDGE_MS = 240
+
 const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
 export default function useMagnetScroll(skySelector = '.Sky') {
@@ -29,6 +39,25 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     let animating = false
     let cooldownUntil = 0
     let settleTimer = 0
+    // 현재 스크롤 동작: src = wheel|touch|key, inside = 사진 안쪽에서 시작, snagged = 맨 위에 걸린 상태, liveUntil = 이 시각까지 같은 동작
+    let g = { src: null, inside: false, snagged: false, liveUntil: 0 }
+    const beginGesture = (src) => {
+      g = { src, inside: window.scrollY > skyH() + EDGE, snagged: false, liveUntil: 0 }
+    }
+    const live = () => performance.now() < g.liveUntil
+    const nudge = () => {
+      if (reduced()) return
+      document.querySelector('.PhotoBoard')?.animate(
+        [{ transform: 'translateY(0)' }, { transform: `translateY(${NUDGE_PX}px)`, offset: 0.35 }, { transform: 'translateY(0)' }],
+        { duration: NUDGE_MS, easing: 'ease-out' },
+      )
+    }
+    // 사진 안쪽에서 시작한 동작이 맨 위(H)에 닿았거나 넘으면 H에 붙이고 걸림 상태로 만든다
+    const snagAt = (H) => {
+      if (!g.snagged) nudge()
+      g.snagged = true
+      window.scrollTo(0, H)
+    }
     let anchor = 0 // 마지막으로 머문 곳: 0 = 별 화면, 1 = 사진 화면(맨 위 포함)
     const syncAnchor = () => {
       const H = skyH()
@@ -83,10 +112,23 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       if (locked() || e.ctrlKey) return // ctrl+휠은 확대/축소
       const dir = Math.sign(e.deltaY)
       if (!dir || Math.abs(e.deltaY) < 1) return
+      const now = performance.now()
+      if (g.src !== 'wheel' || now >= g.liveUntil) beginGesture('wheel')
+      g.liveUntil = now + WHEEL_GAP
       if (busy()) {
         // 이동 중에는 어느 방향이든 기본 스크롤을 막아 화면이 흔들리지 않게 한다(경계 안에 있을 때만)
         const y = window.scrollY
         if (y <= skyH() + 2) e.preventDefault()
+        return
+      }
+      if (dir < 0 && g.inside) {
+        // 사진 안쪽에서 시작한 동작: 이번 휠로 맨 위(H)에 닿거나 넘으면 H에서 멈추고 나머지(관성 포함)는 삼킨다
+        const H = skyH()
+        const px = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * window.innerHeight : e.deltaY
+        if (window.scrollY + px <= H + EDGE) {
+          e.preventDefault()
+          snagAt(H)
+        }
         return
       }
       const target = targetFor(dir)
@@ -100,9 +142,13 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     const onTouchStart = (e) => {
       if (e.touches.length !== 1) { touch = null; return }
       touch = { y: e.touches[0].clientY, taken: false, ignore: false }
+      beginGesture('touch')
+      g.liveUntil = Infinity
     }
     const onTouchMove = (e) => {
-      if (!touch || touch.ignore || locked()) return
+      if (!touch || locked()) return
+      if (g.src === 'touch' && g.snagged) { if (e.cancelable) e.preventDefault(); return } // 걸린 동안엔 이 손가락의 스크롤을 막는다
+      if (touch.ignore) return
       const dy = touch.y - e.touches[0].clientY // 양수 = 손가락을 위로 = 화면은 아래로
       if (!touch.taken) {
         if (Math.abs(dy) < TOUCH_SLOP) return
@@ -119,6 +165,7 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     }
     const onTouchEnd = () => {
       touch = null
+      if (g.src === 'touch') g.liveUntil = performance.now() + MOMENTUM_GUARD
       if (!animating) releaseRoot()
     }
 
@@ -131,11 +178,22 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       if (e.key === 'ArrowDown' || e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) dir = 1
       else if (e.key === 'ArrowUp' || e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) dir = -1
       if (!dir) return
+      if (!e.repeat || g.src !== 'key') beginGesture('key')
+      g.liveUntil = Infinity // 키를 뗄 때까지(onKeyUp) 같은 동작
       if (busy()) { if (window.scrollY <= skyH() + 2) e.preventDefault(); return }
+      if (dir < 0 && g.inside) {
+        // 사진 안쪽에서 시작한 동작: 걸린 뒤의 반복 입력은 막고, 아직이면 브라우저 스크롤이 H를 넘는 순간 onScroll 이 붙잡는다
+        if (g.snagged) e.preventDefault()
+        return
+      }
       const target = targetFor(dir)
       if (target === null) return
       e.preventDefault()
       animateTo(target)
+    }
+
+    const onKeyUp = () => {
+      if (g.src === 'key') g.liveUntil = performance.now() + KEY_TAIL
     }
 
     // ── 안전망: 스크롤바 드래그 등으로 두 화면 '사이'에 멈춘 경우 가까운 쪽으로 붙인다 ──
@@ -148,11 +206,17 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       if (animating || locked()) return
       const H = skyH()
       const y = window.scrollY
+      // 사진 안쪽에서 시작한 동작이 맨 위(H)에 닿거나 넘었으면 거기서 붙잡는다(터치·키처럼 기본 스크롤을 못 막는 경우의 경로)
+      if (H && g.inside && live() && y <= H + 0.5) {
+        if (g.src === 'touch' && touch) document.documentElement.style.overflowY = 'hidden' // 손가락이 닿은 동안 기본 스크롤·관성을 끊는다(뗄 때 해제)
+        snagAt(H)
+        return
+      }
       if (H) {
         if (y <= 1) anchor = 0
         else if (y >= H - 1) anchor = 1
         else if (anchor === 0 && y >= NATIVE_TAKEOVER) { takeOver(H); return } // 별 화면에서 조금만 내려도 사진 화면으로
-        else if (anchor === 1 && y <= H - NATIVE_TAKEOVER) { takeOver(0); return } // 사진 맨 위에서 조금만 올려도 별 화면으로
+        else if (anchor === 1 && y <= H - NATIVE_TAKEOVER && !(g.inside && live())) { takeOver(0); return } // 사진 맨 위에서 조금만 올려도 별 화면으로
       }
       clearTimeout(settleTimer)
       settleTimer = setTimeout(() => {
@@ -171,6 +235,7 @@ export default function useMagnetScroll(skySelector = '.Sky') {
     window.addEventListener('touchend', onTouchEnd, { passive: true })
     window.addEventListener('touchcancel', onTouchEnd, { passive: true })
     window.addEventListener('keydown', onKey)
+    window.addEventListener('keyup', onKeyUp)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => {
       window.removeEventListener('wheel', onWheel)
@@ -179,6 +244,7 @@ export default function useMagnetScroll(skySelector = '.Sky') {
       window.removeEventListener('touchend', onTouchEnd)
       window.removeEventListener('touchcancel', onTouchEnd)
       window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(raf)
       clearTimeout(settleTimer)
