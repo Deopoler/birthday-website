@@ -1,0 +1,165 @@
+/* 3D 버전의 DOM 층. 그림은 뒤의 캔버스가 그리고, 여기 요소들은 대부분 투명한 '누르는 자리'와 글자다. */
+html, body { background: #02030a; }
+
+.W3-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 0;
+  touch-action: pan-y;
+}
+
+/* ── 인트로 ── */
+.W3-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  user-select: none;
+}
+.W3-title {
+  position: absolute;
+  top: calc(9svh + env(safe-area-inset-top, 0px));
+  left: 0;
+  right: 0;
+  padding: 0 20px;
+  text-align: center;
+  font-size: clamp(19px, 5.4vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  color: #fff6dc;
+  text-shadow: 0 0 18px rgba(255, 214, 140, 0.55), 0 2px 10px rgba(0, 0, 0, 0.7);
+  transition: opacity 1.1s ease, transform 1.4s ease;
+  pointer-events: none;
+}
+.W3-intro.is-opening .W3-title { opacity: 0.55; }
+.W3-intro.is-leaving .W3-title { opacity: 0; transform: translateY(40px); }
+.W3-pick {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.W3-pick:disabled { cursor: default; }
+.W3-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(7svh + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  white-space: nowrap;
+  font-size: 14px;
+  color: rgba(255, 246, 220, 0.92);
+  background: rgba(8, 12, 34, 0.42);
+  border: 1px solid rgba(255, 230, 170, 0.28);
+  border-radius: 999px;
+  animation: w3-breathe 2.6s ease-in-out infinite;
+  transition: opacity 0.5s;
+}
+.W3-intro:not(.is-closed) .W3-hint { opacity: 0; animation: none; }
+.W3-pick:focus-visible .W3-hint { outline: 2px solid #fff; outline-offset: 3px; }
+@keyframes w3-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+.W3-hidden { visibility: hidden; }
+/* 시차로 살짝 밀리는 버튼 영역이 가로 넘침을 만들면 모바일에서 화면 폭이 커지고 → 캔버스·배치가 따라 커지는 되먹임이 생긴다. 넘침은 잘라 낸다 */
+main { position: relative; z-index: 1; overflow-x: clip; }
+
+/* ── 별자리 화면 ── */
+.W3-sky {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  user-select: none;
+  touch-action: pan-y;
+}
+.W3-field {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  will-change: transform;
+}
+/* 별 그림은 캔버스에 있다. 이 버튼은 그 자리의 투명한 터치 영역(지름 44px) */
+.W3-star {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  padding: 0;
+  border-radius: 50%;
+  touch-action: pan-y;
+}
+.W3-star:focus-visible { outline: 2px solid #fff; outline-offset: -8px; box-shadow: 0 0 14px 4px rgba(190, 210, 255, 0.7); }
+
+.W3-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  background: rgba(3, 6, 24, 0.5);
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  touch-action: none;
+}
+.W3-veil.is-opening, .W3-veil.is-open { opacity: 1; }
+.Sky-letter { backface-visibility: hidden; }
+
+/* ── 사진 화면 ── */
+.W3-photos {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100svh;
+}
+.W3-sub {
+  position: absolute;
+  top: 92px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(255, 246, 224, 0.85);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+}
+.W3-grid { position: absolute; will-change: transform; }
+.W3-note { position: absolute; padding: 0; border-radius: 3px; }
+.W3-note:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.W3-photo-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  cursor: zoom-out;
+  outline: none;
+  touch-action: none;
+}
+
+/* ── 피날레 문구 ── */
+.W3-finale {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(9svh + env(safe-area-inset-bottom, 0px));
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  color: #fff3cf;
+  text-shadow: 0 0 22px rgba(255, 205, 120, 0.9), 0 2px 10px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  animation: w3-finale 9s ease both;
+}
+.W3-finale span { font-size: 18px; letter-spacing: 0.3em; }
+.W3-finale strong { font-size: clamp(28px, 8vw, 44px); }
+@keyframes w3-finale {
+  0% { opacity: 0; transform: translateY(24px) scale(0.92); }
+  12%, 82% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-12px); }
+}
