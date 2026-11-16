@@ -5,5 +5,4 @@ export const photos = Array.from({ length: 12 }, (_, i) => ({
   id: i,
   src: null,
   color: colors[i % colors.length],
-  caption: `추억 ${i + 1}`,
 }))

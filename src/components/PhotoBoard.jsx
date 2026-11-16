@@ -20,14 +20,13 @@ function Note({ photo, index, className = '', style, onClick, noteRef }) {
       className={`pb-note ${className}`}
       style={{ '--note': NOTE_COLORS[index % NOTE_COLORS.length], '--tilt': `${tilt(index)}deg`, ...style }}
       onClick={onClick}
-      aria-label={`${photo.caption} 크게 보기`}
+      aria-label={`사진 ${index + 1} 크게 보기`}
     >
       <span className="pb-tape" aria-hidden="true" />
       <span
         className="pb-photo"
         style={photo.src ? { backgroundImage: `url(${photo.src})` } : { background: photo.color }}
       />
-      <span className="pb-caption">{photo.caption}</span>
     </button>
   )
 }
