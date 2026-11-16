@@ -91,7 +91,6 @@ export default function PhotoBoard() {
   return (
     <section className="PhotoBoard">
       <div className="pb-fade" aria-hidden="true" />
-      <h2 className="pb-title">우리의 추억</h2>
       <p className="pb-sub">사진을 눌러 크게 보세요</p>
       <div className="pb-grid">
         {photos.map((p, i) => (
