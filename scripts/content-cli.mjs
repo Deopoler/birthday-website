@@ -70,5 +70,6 @@ export function requireGhLogin() {
 }
 
 export function isContentRemote(url) {
-  return /(^|[:/])Deopoler\/birthday-content(\.git)?\/?$/i.test(url.trim())
+  // 호스트까지 github.com 으로 고정한다(다른 서버의 같은 이름 경로를 막기 위해).
+  return /^(?:(?:https?|ssh|git):\/\/(?:[^@/\s]+@)?|[^@/\s]+@)github\.com[:/]Deopoler\/birthday-content(?:\.git)?\/?$/i.test(url.trim())
 }

@@ -41,6 +41,8 @@ export const IMAGE_EXTS = new Set(
     'tif', 'tiff', 'bmp', 'dib', 'ico', 'jxl',
     // 카메라 RAW
     'dng', 'cr2', 'cr3', 'nef', 'arw', 'raf', 'orf', 'rw2',
+    // 압축 파일(사진을 묶어 우회하는 것을 막는다)
+    'zip', '7z', 'rar', 'tar', 'gz', 'tgz', 'bz2', 'xz', 'zst', 'cab', 'iso',
   ].map((e) => '.' + e),
 )
 
@@ -82,6 +84,10 @@ export function sniffImage(buf) {
     for (let o = 16; o + 4 <= end; o += 4) brands.push(ascii(buf, o, o + 4))
     if (brands.some((b) => ISO_IMAGE_BRANDS.has(b))) return 'HEIC/AVIF'
   }
+  if (startsWith(buf, [0x50, 0x4b, 0x03, 0x04]) || startsWith(buf, [0x50, 0x4b, 0x05, 0x06])) return 'ZIP 압축'
+  if (startsWith(buf, [0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])) return '7z 압축'
+  if (ascii(buf, 0, 4) === 'Rar!') return 'RAR 압축'
+  if (startsWith(buf, [0x1f, 0x8b])) return 'gzip 압축'
   if (startsWith(buf, [0xff, 0x0a])) return 'JPEG XL'
   if (startsWith(buf, [0x00, 0x00, 0x00, 0x0c, 0x4a, 0x58, 0x4c, 0x20, 0x0d, 0x0a, 0x87, 0x0a])) return 'JPEG XL'
   return null
