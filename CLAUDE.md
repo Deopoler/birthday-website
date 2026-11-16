@@ -50,8 +50,8 @@
 | 난이도 | 1순위 | 쿼터 소진 시 대체 (순서대로) | 리뷰 |
 |---|---|---|---|
 | L1 | agy + **Gemini 4 Hydrogen** (목록에 있을 때) / 없으면 `Gemini 3.8 Flash` | ① 둘 중 남은 쪽 ② 지휘자가 직접 처리 (아주 작은 경우만) | 없음 (작업자가 테스트만 돌림) |
-| L2 | agy + `Gemini 3.8 Flash (High)` (2026-11-16 사용자 변경: L2 작업자를 claude에서 agy로) | ① agy + `Gemini 4 Hydrogen (High)` ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
-| L3 | agy + `Claude Opus 5.5 (Thinking)` | ① agy + `Gemini 4 Argon` ② agy + `Claude Sonnet 5.5 (Thinking)` ③ `claude` 작업자 | **항상** 리뷰 |
+| L2 | agy + `Claude Sonnet 5.5 (High)` (2026-11-16 사용자 변경: L2를 agy의 Sonnet으로) | ① agy + `Gemini 3.8 Flash (High)` (결과를 더 꼼꼼히 확인) ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
+| L3 | agy + `Gemini 4 Argon (High)` (2026-11-16 사용자 변경: L3를 Opus에서 Argon으로, Claude 그룹 쿼터를 L2 Sonnet에 남기려는 것) | ① agy + `Claude Opus 5.5 (High)` ② agy + `Claude Sonnet 5.5 (High)` ③ `claude` 작업자 | **항상** 리뷰 |
 | 리뷰 | codex | agy + 작성자와 **다른 계열** 모델 (아래 규칙) | - |
 
 ### Gemini 4 Argon 전용 작업
@@ -65,19 +65,19 @@ L3 구현은 Opus가 1순위지만, 아래 작업은 **처음부터 Argon**에�
 ### 모델 쿼터 메모
 
 - 쿼터는 **모델 그룹마다 따로** 줄어든다. Gemini Flash / Gemini 4 Argon / Claude 그룹 중 하나가 바닥나도 다른 그룹은 남아 있을 수 있다.
-- **L2는 이제 agy + Gemini 3.8 Flash를 쓴다**(2026-11-16 사용자 변경). Gemini Flash 그룹 쿼터를 쓰고, **Claude Pro 쿼터는 지휘자(나)의 몫으로 아낀다.** Flash 모델이라 결과를 더 꼼꼼히 확인한다(빌드·`git diff`·핵심 시나리오 직접 실행).
-  Gemini Flash 쿼터가 바닥나면 L2를 agy + `Gemini 4 Hydrogen`으로, 그것도 안 되면 `claude --model sonnet`으로 내리고(이때는 Claude Pro 한도 경고에 주의) 사용자에게 알린다.
-- Antigravity 안의 Claude 모델(Opus/Sonnet 5.5)은 L3 전용으로 아낀다. L2에 agy의 Sonnet을 쓰지 않는다.
+- **L2는 agy + Claude Sonnet 5.5를 쓴다**(2026-11-16 사용자 변경). Antigravity의 **Claude 그룹 쿼터**를 쓰고, **Claude Pro 쿼터는 지휘자(나)의 몫으로 아낀다.** L3를 Argon으로 옮겼으므로 Claude 그룹은 L2 Sonnet이 주로 쓴다.
+  Claude 그룹 쿼터가 바닥나면 L2를 agy + `Gemini 3.8 Flash`로 내리고(결과를 더 꼼꼼히 확인), 그것도 안 되면 `claude --model sonnet`으로 내리며 사용자에게 알린다. 남은 양은 작업자 세션의 `/usage`로 확인하고 하루 첫 배정 전에 한 번 본다.
+- Antigravity의 Claude 모델(Opus/Sonnet 5.5)은 **L2(Sonnet) 전용**이고, Opus는 L3 대체용으로만 쓴다(2026-11-16 사용자 변경. 이전에는 L3 전용으로 아꼈음).
 - **Antigravity의 Claude Opus 5.5는 쿼터가 작다.** 계획 → 구현 → 수정이 길어지면 금방 바닥나므로, L3 작업은 계획을 먼저 확정한 뒤 한 번에 구현시킨다.
-- **Gemini 4 Argon은 주간 쿼터만 있다** (5시간마다 다시 차지 않음). L2 이하에는 쓰지 않는다.
-- Argon 남은 양이 20% 아래면 위 "Argon 전용 작업"에만 쓴다.
+- **Gemini 4 Argon은 주간 쿼터만 있다** (5시간마다 다시 차지 않음). **L3 구현의 1순위이자 아래 'Argon 전용 작업'(코드 분석·원인 추적·보안 점검)에 쓰므로 두 용도가 같은 주간 쿼터를 나눠 쓴다.** L2 이하에는 쓰지 않는다.
+- Argon 남은 양이 20% 아래면 'Argon 전용 작업'에만 Argon을 쓰고, L3 구현은 `Claude Opus 5.5 (High)`로 대체한다(사용자에게 알림).
 - 남은 양은 작업자 세션에서 `/usage`로 확인할 수 있다. 하루 첫 L3 배정 전에 한 번 확인한다.
 
 ### 리뷰어 선택 규칙
 
 - 리뷰는 **코드를 쓴 모델과 다른 계열**이 한다. 같은 모델은 자기 실수를 잘 못 찾는다.
-  - Claude가 쓴 코드 (L3) → codex, 안 되면 agy + `Gemini 4 Argon`
-  - Claude가 쓴 코드 (L2를 claude로 대체했을 때) → codex, 안 되면 agy + `Gemini 3.8 Flash`
+  - Claude가 쓴 코드 (L3를 Opus로 대체했을 때) → codex, 안 되면 agy + `Gemini 4 Argon`
+  - Claude가 쓴 코드 (L2) → codex, 안 되면 agy + `Gemini 3.8 Flash`
   - Gemini가 쓴 코드 → codex, 안 되면 agy + `Claude Sonnet 5.5 (Thinking)`
 
 ### 실행 템플릿
@@ -189,7 +189,8 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
   - **`--add-dir <worktree>` 필수**: 빼면 자기 작업 폴더 파일을 읽을 때마다 "File access" 권한 질문으로 멈춘다.
   - `--dangerously-skip-permissions` 같은 권한 우회 옵션은 쓰지 않는다. 첫 실행 때 색상 테마·로그인 설정이 필요했고 사용자가 한 번 끝냈다.
 - **codex 실행 형태**: `hc run --bg --name review-<작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe --no-daemon "<지시>"`.
-- **agy(L2) 실행 형태**: `hc run --bg --name l2-<task> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto --add-dir <worktree> --model "Gemini 3.8 Flash (High)" -i "<English prompt>"`.
+- **agy(L2) 실행 형태**: `hc run --bg --name l2-<task> --cwd <worktree> -- C:/Users/seonj/AppData/Local/agy/bin/agy.exe --mode auto --add-dir <worktree> --model "Claude Sonnet 5.5 (High)" -i "<English prompt>"`.
+- **agy(L3) 실행 형태**: 같은 형태에서 `--name l3-<task>` 와 `--model "Gemini 4 Argon (High)"` (Argon 전용 분석 작업은 `--name scan-<task>`). Argon 대체(Opus) 때는 `--model "Claude Opus 5.5 (High)"`. L3는 plan-first 규칙을 따른다.
 - **claude(L2 대체) 실행 형태**: `hc run --bg --name l2-<작업명> --cwd <worktree> claude --model sonnet "<English prompt>"` (agy 쿼터 소진 등으로 대체할 때만).
 - **보고 방식 (사용자 결정, 2026-11-16, 영어로 지시)**: **agy 작업자는 `hc send`를 쓰지 않는다.** agy의 샌드박스가 `hc` 연결을 막아서 `hc send`를 쓰면 매번 사용자 승인 질문(blocked: permission)이 뜬다. 지시문에 이렇게 쓴다: "Do NOT use `hc send`. When you are finished or blocked, write your report as your LAST message in exactly this format and then stop: `SUMMARY:` (max 3 lines) / `FILES CHANGED:` / `VERIFIED:` / `NOT VERIFIED:` / `DECISIONS NEEDED:` (prefix the first line with `[BLOCKED]` if blocked)." 나는 `hc wait` 완료 알림(턴 종료)을 받은 뒤 `hc read --lines 80`으로 그 마지막 보고를 읽는다(codex와 같은 방식).
   - **L3 계획 먼저(plan-first)**: 작업자는 `PLAN:` 메시지를 마지막 메시지로 쓰고 턴을 끝낸다 → 나는 완료 알림 후 `hc read`로 계획을 읽고 → 승인·수정을 `hc send <작업자 터미널> '<English message>'`로 보낸다 → 작업자가 이어서 구현한다.
