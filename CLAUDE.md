@@ -233,7 +233,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 - 구성: `Envelope`(인트로: 은하수 아래 나무 밑에 떨어진 봉투를 주워 열고 하늘을 올려다봄) → `Sky`(이름 '이하진' 모양 별자리, 별을 누르면 롤링페이퍼 편지가 열림, 열린 별 사이의 글씨 획이 이어짐) → `PhotoBoard`(포스트잇 사진).
 - 별 화면과 사진 화면 사이는 `src/useMagnetScroll.js`가 자석처럼 스크롤을 잡는다(CSS scroll-snap은 쓰지 않음).
 - 사진·메시지는 비공개 저장소 `Deopoler/birthday-content`(로컬 `content/`, git 무시)에서 빌드 때 가져온다. 비어 있으면 더미(`src/data/dummyPhotos.js`, `messages.js`)로 대체된다.
-- **3D 버전(개발 중)**: 주소에 `?3d=1`을 붙이면 켜진다(`src/main.jsx`). `src/three/`에 있고 three.js로 그린다: `world.js`(카메라 연출: 풀밭 → 하늘 → 사진), `sky/ground/tree/envelope/constellation/photos/fireworks.js`(장면), `App3D.jsx`(글자·버튼·편지만 DOM). WebGL 불가·움직임 줄이기 설정이면 2D로 대체. `?3d=1&skip`은 인트로 건너뛰기(검증용). 셰이더에서 음수를 `pow` 하지 말 것(NaN이 빛 번짐을 타고 화면 전체가 검어짐).
+- **3D 버전이 기본**(2026-11-17 사용자 결정, `src/main.jsx`). 주소에 `?3d=0`을 붙이면 기존 2D 버전. `src/three/`에 있고 three.js로 그린다: `world.js`(카메라 연출: 풀밭 → 하늘 → 사진), `sky/ground/tree/envelope/constellation/photos/fireworks.js`(장면), `App3D.jsx`(글자·버튼·편지만 DOM). WebGL 불가·움직임 줄이기 설정이면 2D로 대체. `?skip`은 인트로 건너뛰기(검증용). 셰이더에서 음수를 `pow` 하지 말 것(NaN이 빛 번짐을 타고 화면 전체가 검어짐).
 - 이미지·글꼴 출처는 `CREDITS.md`. 인트로 그림 일부는 `scripts/gen-ground.mjs`로 생성한다.
 - 병렬 작업 시 컴포넌트별로 파일이 겹치지 않게 나눈다(각자 `components/<이름>.jsx|css`만 수정).
 - 화면 검증은 헤드리스 Edge + puppeteer-core로 한다(`C:/Users/seonj/AppData/Local/Temp/claude/826388f8a8a6d2af/f290c800-c198-42ea-8dae-d8cbb867c455/scratchpad/pt/`에 설치, 예시 스크립트 있음). 실제 터치는 `Input.dispatchTouchEvent`로 보낸다(`synthesizeScrollGesture`는 이 환경에서 동작하지 않음). 작업자마다 dev 서버 포트를 다르게 쓰고(5173은 메인 폴더용) 끝나면 종료한다.

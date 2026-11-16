@@ -4,6 +4,7 @@ import { photos } from '../data/photos'
 import { portraitLayout, landscapeLayout, CONSTELLATION_TEXT } from '../data/constellation'
 import useMagnetScroll from '../useMagnetScroll'
 import { createWorld, GRID_TOP } from './world'
+import '../App.css' // 전역 기본 스타일(버튼 초기화 등)
 import '../components/Sky.css' // 편지 카드·카운터·안내문 모양은 2D 버전과 같은 것을 쓴다
 import './App3D.css'
 
