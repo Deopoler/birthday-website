@@ -61,6 +61,8 @@ export default function Sky() {
   const skyRef = useRef(null)
   const cardRef = useRef(null)
   const glowRef = useRef(null)
+  const closeBtnRef = useRef(null)
+  const returnFocusRef = useRef(null) // 닫을 때 포커스를 돌려줄 별
   const starRect = useRef(null)
   const anim = useRef(null)
   const phaseRef = useRef('idle')
@@ -77,6 +79,7 @@ export default function Sky() {
   const open = (i, e) => {
     if (phaseRef.current !== 'idle') return
     starRect.current = e.currentTarget.getBoundingClientRect()
+    returnFocusRef.current = i
     setOpened((o) => (o.includes(i) ? o : [...o, i]))
     setReborn(null)
     setActive(i)
@@ -87,6 +90,7 @@ export default function Sky() {
   useLayoutEffect(() => {
     if (active == null || phaseRef.current !== 'opening') return
     const card = cardRef.current
+    closeBtnRef.current?.focus({ preventScroll: true }) // 모달 안으로 포커스 이동
     const to = card.getBoundingClientRect()
     anim.current?.cancel()
     placeGlow(glowRef.current, starRect.current)
@@ -143,7 +147,14 @@ export default function Sky() {
     const prevBody = document.body.style.overflow
     html.style.overflow = 'hidden'
     document.body.style.overflow = 'hidden'
-    const onKey = (e) => e.key === 'Escape' && close()
+    const onKey = (e) => {
+      if (e.key === 'Escape') close()
+      else if (e.key === 'Tab') {
+        // 모달 안의 포커스 가능한 요소는 닫기 버튼 하나뿐 → 포커스를 모달 밖으로 보내지 않는다
+        e.preventDefault()
+        closeBtnRef.current?.focus({ preventScroll: true })
+      }
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       html.style.overflow = prevHtml
@@ -152,11 +163,18 @@ export default function Sky() {
     }
   }, [active])
 
+  // 닫힌 뒤 포커스를 연 별로 되돌린다(마우스/터치로 열었다면 :focus-visible 이 링을 그리지 않는다)
+  useEffect(() => {
+    if (active != null || returnFocusRef.current == null) return
+    skyRef.current?.querySelector(`[data-star="${returnFocusRef.current}"]`)?.focus({ preventScroll: true })
+    returnFocusRef.current = null
+  }, [active])
+
   const msg = active != null ? messages[active] : null
 
   return (
     <section ref={skyRef} className="Sky" aria-label={`${CONSTELLATION_TEXT} 별자리`}>
-      <div className="Sky-world">
+      <div className="Sky-world" inert={active != null}>
         <div className="Sky-bg">
           {bgStars.map((b) => (
             <span
@@ -206,17 +224,17 @@ export default function Sky() {
         </div>
       </div>
 
-      <div className="Sky-counter" aria-live="polite">
+      <div className="Sky-counter" aria-live="polite" inert={active != null}>
         ★ {opened.length} / {count}
       </div>
-      {opened.length === 0 && <p className="Sky-hint">별을 눌러 메시지를 열어보세요</p>}
+      {opened.length === 0 && <p className="Sky-hint" inert={active != null}>별을 눌러 메시지를 열어보세요</p>}
 
       {msg && (
         <>
           <div className={`Sky-overlay is-${phase}`} onClick={close} role="presentation" />
           <div ref={glowRef} className="Sky-glow" aria-hidden="true" />
-          <div ref={cardRef} className={`Sky-letter is-${phase}`} role="dialog" aria-modal="true">
-            <button type="button" className="Sky-close" onClick={close} aria-label="닫기">
+          <div ref={cardRef} className={`Sky-letter is-${phase}`} role="dialog" aria-modal="true" aria-label={`${msg.from}의 메시지`}>
+            <button ref={closeBtnRef} type="button" className="Sky-close" onClick={close} aria-label="닫기">
               ×
             </button>
             <div className="Sky-content">

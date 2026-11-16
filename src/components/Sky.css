@@ -220,3 +220,7 @@
   .Sky *, .Sky-letter { animation-duration: 0.01s !important; animation-iteration-count: 1 !important; }
   .Sky-overlay, .Sky-letter::before, .Sky-content, .Sky-close { transition-duration: 0.2s !important; transition-delay: 0s !important; }
 }
+
+/* 키보드 포커스 표시(별빛 링) */
+.Sky-star:focus-visible { outline: 2px solid #fff; outline-offset: 5px; box-shadow: 0 0 14px 6px rgba(190, 210, 255, 0.9); }
+.Sky-close:focus-visible { outline: 2px solid #7a6448; outline-offset: 1px; border-radius: 50%; }

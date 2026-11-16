@@ -48,15 +48,19 @@ export default function PhotoBoard() {
   const refs = useRef({})
   const cardRef = useRef(null)
   const backdropRef = useRef(null)
+  const overlayRef = useRef(null)
+  const returnFocusRef = useRef(null)
 
   const open = (i) => {
     if (active) return
+    returnFocusRef.current = i
     setActive({ index: i, from: refs.current[i].getBoundingClientRect(), to: finalBox() })
   }
 
   // 열기: 원래 위치 → 중앙 (FLIP)
   useLayoutEffect(() => {
     if (!active) return
+    overlayRef.current.focus({ preventScroll: true })
     cardRef.current.animate(flip(active.from, active.to), { duration: DURATION, easing: EASE })
     backdropRef.current.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DURATION, easing: 'ease' })
   }, [active])
@@ -77,7 +81,14 @@ export default function PhotoBoard() {
 
   useEffect(() => {
     if (!active) return
-    const onKey = (e) => e.key === 'Escape' && close()
+    const onKey = (e) => {
+      if (e.key === 'Escape') close()
+      else if (e.key === 'Tab') {
+        // 모달 안에서 이동할 곳이 없으므로 포커스를 모달에 고정
+        e.preventDefault()
+        overlayRef.current?.focus({ preventScroll: true })
+      }
+    }
     window.addEventListener('keydown', onKey)
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -87,11 +98,18 @@ export default function PhotoBoard() {
     }
   }, [active, close])
 
+  // 닫힌 뒤 포커스를 연 사진으로 되돌린다
+  useEffect(() => {
+    if (active || returnFocusRef.current == null) return
+    refs.current[returnFocusRef.current]?.focus({ preventScroll: true })
+    returnFocusRef.current = null
+  }, [active])
+
   return (
     <section className="PhotoBoard">
       <div className="pb-fade" aria-hidden="true" />
-      <p className="pb-sub">사진을 눌러 크게 보세요</p>
-      <div className="pb-grid">
+      <p className="pb-sub" inert={!!active}>사진을 눌러 크게 보세요</p>
+      <div className="pb-grid" inert={!!active}>
         {photos.map((p, i) => (
           <div className="pb-cell" key={p.id}>
             <Note
@@ -106,7 +124,7 @@ export default function PhotoBoard() {
       </div>
 
       {active && (
-        <div className="pb-overlay" role="dialog" aria-modal="true">
+        <div className="pb-overlay" ref={overlayRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`사진 ${active.index + 1} 크게 보기`}>
           <div className="pb-backdrop" ref={backdropRef} onClick={close} />
           <div
             className="pb-zoom"

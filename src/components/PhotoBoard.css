@@ -113,3 +113,7 @@
 @media (prefers-reduced-motion: reduce) {
   .pb-note { transition: none; }
 }
+
+/* 키보드 포커스 표시 */
+.pb-note:focus-visible { outline: 3px solid #fff; outline-offset: 4px; }
+.pb-overlay:focus { outline: none; }
