@@ -11,8 +11,6 @@
 1. `hc --skill` 실행해서 hc 사용법 확인.
 2. `agy models` 실행해서 **정확한 모델 표시 이름**을 확인하고, 아래 표의 이름과 다르면 실제 이름을 쓴다.
    (모델 이름은 자주 바뀐다. 추측해서 쓰지 말 것.)
-   - **L1 모델 결정**: 목록에 Gemini 4 Hydrogen(= Gemini 4 Flash, 이름에 `Hydrogen` 또는 `Gemini 4 Flash`가 들어간 모델)이
-     있으면 L1 1순위로 그 모델을 쓴다. 없으면 `Gemini 3.8 Flash`를 쓴다. 처음 발견했을 때 사용자에게 한 번 알린다.
 3. **최신 모델 점검 (오케스트레이션 세션을 처음 실행할 때, 세션당 한 번)**: 각 계열(Claude, Gemini, OpenAI/Codex)의 최신 모델을 웹 검색(WebSearch)으로 찾아 이 문서에 적힌 모델과 비교한다.
    - 비교 근거는 함께 본다: `agy models` 목록(이 PC에서 실제로 쓸 수 있는 모델), 설치된 CLI 버전(`codex --version` 등), Claude Code가 안내하는 최신 Claude 모델 ID. 웹 검색 결과는 비공식 사이트가 많아 틀릴 수 있으니 공식 페이지를 우선하고, 확인이 안 되면 "미확인"이라고 표시한다.
    - **더 새 모델이 나왔거나 이름이 바뀐 것이 있으면 사용자에게 알리고, 바꿀지 묻는다.** 사용자 승인 전에는 배정표를 바꾸지 않는다. 바뀐 것이 없으면 "변경 없음"을 한 줄로 알린다.
@@ -54,7 +52,7 @@
 
 | 난이도 | 1순위 | 쿼터 소진 시 대체 (순서대로) | 리뷰 |
 |---|---|---|---|
-| L1 | agy + **Gemini 4 Hydrogen** (목록에 있을 때) / 없으면 `Gemini 3.8 Flash` | ① 둘 중 남은 쪽 ② 지휘자가 직접 처리 (아주 작은 경우만) | 없음 (작업자가 테스트만 돌림) |
+| L1 | agy + `Gemini 4 Hydrogen (Medium)` | ① agy + `Gemini 3.8 Flash` ② 지휘자가 직접 처리 (아주 작은 경우만) | 없음 (작업자가 테스트만 돌림) |
 | L2 | agy + `Claude Sonnet 5.5 (High)` (2026-11-16 사용자 변경: L2를 agy의 Sonnet으로) | ① agy + `Gemini 3.8 Flash (High)` (결과를 더 꼼꼼히 확인) ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
 | L3 | agy + `Gemini 4 Argon (High)` (2026-11-16 사용자 변경: L3를 Opus에서 Argon으로, Claude 그룹 쿼터를 L2 Sonnet에 남기려는 것) | ① agy + `Claude Opus 5.5 (High)` ② agy + `Claude Sonnet 5.5 (High)` ③ `claude` 작업자 | **항상** 리뷰 |
 | 리뷰 | codex | agy + 작성자와 **다른 계열** 모델 (아래 규칙) | - |
