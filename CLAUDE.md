@@ -39,7 +39,7 @@
 
 애매하면 **한 단계 위**로 올린다. 단, L3는 남발하지 않는다 (쿼터가 가장 작음).
 
-### 난이도 보정 메모 (내가 스스로 갱신하는 부분, 2026-11-16 사용자 승인 — 위 표와 문장은 원문 그대로 두고 보정은 여기에 쌓는다)
+### 난이도 보정 메모 (위 표와 문장은 그대로 두고 보정은 여기에 쌓는다)
 - **판정 해석 보정 1**: 우회 방지·검증·차단 같은 **방어 장치(fail-closed 보호, 훅, 검사기)를 새로 만드는 일은 "새 기능/구조 설계 +2"로 친다.** (근거: photos-harden을 3점 L2로 판정했으나 codex 리뷰에서 높음 3건·중간 3건이 나와 설계를 폐기·재설계함. 4점 이상=L3였어야 함.)
 - **분할 규칙(난이도와 별개)**: 서로 다른 종류의 산출물(스크립트·워크플로·문서·설정·훅 등)이 **6종류 이상**이거나, 한 번의 쿼터 소진이 우려되는 큰 작업은 **한 작업자에게 통째로 맡기지 않고 단계(① 설계·핵심 구현 ② 주변 기능·문서·검증)로 쪼개** 순서대로 맡긴다. (근거: l3-content-private가 구현 약 90% 시점에 Claude 그룹 쿼터를 소진해 중단, 다른 그룹이 인계.)
 - **세분화 표기**: 필요하면 `L1a/L1b`, `L2a/L2b`, `L3a/L3b`(또는 L4)처럼 나눈다. 세분 등급의 배정은 **이미 배정표에 있는 작업자·모델 행만 재사용**한다(예: L2b = L2와 같은 모델 + plan-first + 항상 리뷰). 아래 "보정 이력"에 정의를 적는다.
@@ -53,8 +53,8 @@
 | 난이도 | 1순위 | 쿼터 소진 시 대체 (순서대로) | 리뷰 |
 |---|---|---|---|
 | L1 | agy + `Gemini 4 Hydrogen (Medium)` | ① agy + `Gemini 3.8 Flash` ② 지휘자가 직접 처리 (아주 작은 경우만) | 없음 (작업자가 테스트만 돌림) |
-| L2 | agy + `Claude Sonnet 5.5 (High)` (2026-11-16 사용자 변경: L2를 agy의 Sonnet으로) | ① agy + `Gemini 3.8 Flash (High)` (결과를 더 꼼꼼히 확인) ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
-| L3 | agy + `Gemini 4 Argon (High)` (2026-11-16 사용자 변경: L3를 Opus에서 Argon으로, Claude 그룹 쿼터를 L2 Sonnet에 남기려는 것) | ① agy + `Claude Opus 5.5 (High)` ② agy + `Claude Sonnet 5.5 (High)` ③ `claude` 작업자 | **항상** 리뷰 |
+| L2 | agy + `Claude Sonnet 5.5 (High)` | ① agy + `Gemini 3.8 Flash (High)` (결과를 더 꼼꼼히 확인) ② `claude --model sonnet` (Claude Pro 쿼터 사용, 사용자에게 알림) | 핵심 파일이 바뀌었을 때만 리뷰 |
+| L3 | agy + `Gemini 4 Argon (High)` | ① agy + `Claude Opus 5.5 (High)` ② agy + `Claude Sonnet 5.5 (High)` ③ `claude` 작업자 | **항상** 리뷰 |
 | 리뷰 | codex | agy + 작성자와 **다른 계열** 모델 (아래 규칙) | - |
 
 ### Gemini 4 Argon 전용 작업
@@ -68,9 +68,9 @@ L3 구현과 별개로, 아래 분석 작업은 Argon에게 맡긴다 (긴 문�
 ### 모델 쿼터 메모
 
 - 쿼터는 **모델 그룹마다 따로** 줄어든다. Gemini Flash / Gemini 4 Argon / Claude 그룹 중 하나가 바닥나도 다른 그룹은 남아 있을 수 있다.
-- **L2는 agy + Claude Sonnet 5.5를 쓴다**(2026-11-16 사용자 변경). Antigravity의 **Claude 그룹 쿼터**를 쓰고, **Claude Pro 쿼터는 지휘자(나)의 몫으로 아낀다.** L3를 Argon으로 옮겼으므로 Claude 그룹은 L2 Sonnet이 주로 쓴다.
+- **L2는 agy + Claude Sonnet 5.5를 쓴다.** Antigravity의 **Claude 그룹 쿼터**를 쓰고, **Claude Pro 쿼터는 지휘자(나)의 몫으로 아낀다.** L3를 Argon으로 옮겼으므로 Claude 그룹은 L2 Sonnet이 주로 쓴다.
   Claude 그룹 쿼터가 바닥나면 L2를 agy + `Gemini 3.8 Flash`로 내리고(결과를 더 꼼꼼히 확인), 그것도 안 되면 `claude --model sonnet`으로 내리며 사용자에게 알린다.
-- Antigravity의 Claude 모델(Opus/Sonnet 5.5)은 **L2(Sonnet) 전용**이고, Opus는 L3 대체용으로만 쓴다(2026-11-16 사용자 변경. 이전에는 L3 전용으로 아꼈음).
+- Antigravity의 Claude 모델(Opus/Sonnet 5.5)은 **L2(Sonnet) 전용**이고, Opus는 L3 대체용으로만 쓴다.
 - **Antigravity의 Claude Opus 5.5는 쿼터가 작다.** 계획 → 구현 → 수정이 길어지면 금방 바닥나므로, L3 작업은 계획을 먼저 확정한 뒤 한 번에 구현시킨다.
 - **Gemini 4 Argon은 주간 쿼터만 있다** (5시간마다 다시 차지 않음). **L3 구현의 1순위이자 아래 'Argon 전용 작업'(코드 분석·원인 추적·보안 점검)에 쓰므로 두 용도가 같은 주간 쿼터를 나눠 쓴다.** L2 이하에는 쓰지 않는다.
 - Argon 남은 양이 20% 아래면 'Argon 전용 작업'에만 Argon을 쓰고, L3 구현은 `Claude Opus 5.5 (High)`로 대체한다(사용자에게 알림).
@@ -105,7 +105,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 
 ## 4. 병렬 처리와 충돌 방지
 
-- 서로 다른 파일을 건드리는 작업만 동시에 띄운다. 동시에 띄우는 작업자는 최대 4개(2026-11-16 사용자가 늘려도 된다고 승인, 권장 구성은 §8 "동시 4개 운영 기준").
+- 서로 다른 파일을 건드리는 작업만 동시에 띄운다. 동시에 띄우는 작업자는 최대 4개(권장 구성은 §8 "동시 4개 운영 기준").
 - 작업자마다 `git worktree add ../wt-<작업명> -b <작업명>`으로 전용 폴더를 준다.
 - 통합(merge)은 **지휘자만** 한다.
 
@@ -145,7 +145,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 
 ---
 
-## 언어 규칙 (사용자 지시, 2026-11-16)
+## 언어 규칙
 
 사용자는 한국어로 말한다. 사용자의 요청은 자동으로 영어로 번역해서 작업자에게 보낸다. 작업자(agy, claude, codex)에게 보내는 모든 지시문, 보고 규칙, 리뷰 요청은 영어로만 쓴다.
 번역할 때 의미를 바꾸거나 빼지 않는다. 사용자가 쓴 파일명, 함수명, 변수명, 에러 메시지, UI 문구(한국어 문자열 포함)는 원문 그대로 둔다.
@@ -171,7 +171,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 - **codex 실행 형태**: `hc run --bg --name review-<작업명> --cwd <worktree> -- C:/Users/seonj/AppData/Local/Programs/OpenAI/Codex/bin/codex.exe --no-daemon "<지시>"`.
 - **모델만 바꿔 쓴다**: L1 `Gemini 4 Hydrogen (Medium)`, L2 `Claude Sonnet 5.5 (High)`, L3 `Gemini 4 Argon (High)`(분석 전용은 `--name scan-<task>`), L3 대체 `Claude Opus 5.5 (High)`. L3는 plan-first를 따른다. 터미널 이름은 `l1-/l2-/l3-/scan-/review-<작업명>`.
 - **claude(L2 대체) 실행 형태**: `hc run --bg --name l2-<작업명> --cwd <worktree> claude --model sonnet "<English prompt>"` (agy 쿼터 소진 등으로 대체할 때만).
-- **보고 방식 (사용자 결정, 2026-11-16, 영어로 지시)**: **agy 작업자는 `hc send`를 쓰지 않는다.** agy의 샌드박스가 `hc` 연결을 막아서 `hc send`를 쓰면 매번 사용자 승인 질문(blocked: permission)이 뜬다. 지시문에 이렇게 쓴다: "Do NOT use `hc send`. When you are finished or blocked, write your report as your LAST message in exactly this format and then stop: `SUMMARY:` (max 3 lines) / `FILES CHANGED:` / `VERIFIED:` / `NOT VERIFIED:` / `DECISIONS NEEDED:` (prefix the first line with `[BLOCKED]` if blocked)." 나는 `hc wait` 완료 알림(턴 종료)을 받은 뒤 `hc read --lines 80`으로 그 마지막 보고를 읽는다(codex와 같은 방식).
+- **보고 방식 (영어로 지시)**: **agy 작업자는 `hc send`를 쓰지 않는다.** agy의 샌드박스가 `hc` 연결을 막아서 `hc send`를 쓰면 매번 사용자 승인 질문(blocked: permission)이 뜬다. 지시문에 이렇게 쓴다: "Do NOT use `hc send`. When you are finished or blocked, write your report as your LAST message in exactly this format and then stop: `SUMMARY:` (max 3 lines) / `FILES CHANGED:` / `VERIFIED:` / `NOT VERIFIED:` / `DECISIONS NEEDED:` (prefix the first line with `[BLOCKED]` if blocked)." 나는 `hc wait` 완료 알림(턴 종료)을 받은 뒤 `hc read --lines 80`으로 그 마지막 보고를 읽는다(codex와 같은 방식).
   - **L3 계획 먼저(plan-first)**: 작업자는 `PLAN:` 메시지를 마지막 메시지로 쓰고 턴을 끝낸다 → 나는 완료 알림 후 `hc read`로 계획을 읽고 → 승인·수정을 `hc send <작업자 터미널> '<English message>'`로 보낸다 → 작업자가 이어서 구현한다.
   - Claude 작업자(대체용)는 `hc send t4 '...'`(내 실제 터미널 ID)를 써도 된다.
 - **모델 이름**: 표시 이름에 `(Low/Medium/High)`가 붙고 `(Thinking)`은 없다 → `(High)`로 읽는다. 기본 모델은 Argon이므로 **agy는 항상 `--model`을 명시**한다.
@@ -187,7 +187,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 - 작업자가 띄운 dev 서버는 끝날 때 종료시키게 지시한다. `.orchestra/` 는 로컬 기록이므로 `.gitignore`에 둔다.
 - 파일을 바꾸지 않는 아주 사소한 질문(코드 설명, 상태 확인 등)은 메인에서 바로 답해도 된다.
 
-- **동시 4개 운영 기준** (2026-11-16, 사용자 승인 후 내가 권장한 값): 구현 작업자 2~3개 + codex 리뷰·분석 1개. ① 구현 작업자는 서로 겹치지 않는 파일 묶음이 있을 때만 띄운다(묶음 수보다 많이 띄우지 않는다). ② agy 작업자(L1·L2·L3)는 동시에 3개까지(모델 그룹별 쿼터가 따로이니 한 모델에 몰리지 않게 분산, Argon은 주간 쿼터라 전용 작업만). ③ Claude 작업자(agy 대체용, 지휘자와 같은 Claude Pro 쿼터)는 동시에 1개까지. ④ codex 리뷰·분석은 1개. ⑤ 권한·인증 질문으로 막혀 사용자 응답을 기다리는 작업자가 2개 이상 쌓이면 새로 띄우지 않고 사용자 응답부터 받는다. ⑥ 끝났는데 아직 통합하지 못한 작업이 2개 이상이면 새 작업을 띄우지 않는다(통합이 병목). 한도를 더 올리거나 줄이는 것은 정책 결정이라 먼저 사용자에게 묻는다.
+- **동시 4개 운영 기준**: 구현 작업자 2~3개 + codex 리뷰·분석 1개. ① 구현 작업자는 서로 겹치지 않는 파일 묶음이 있을 때만 띄운다(묶음 수보다 많이 띄우지 않는다). ② agy 작업자(L1·L2·L3)는 동시에 3개까지(모델 그룹별 쿼터가 따로이니 한 모델에 몰리지 않게 분산, Argon은 주간 쿼터라 전용 작업만). ③ Claude 작업자(agy 대체용, 지휘자와 같은 Claude Pro 쿼터)는 동시에 1개까지. ④ codex 리뷰·분석은 1개. ⑤ 권한·인증 질문으로 막혀 사용자 응답을 기다리는 작업자가 2개 이상 쌓이면 새로 띄우지 않고 사용자 응답부터 받는다. ⑥ 끝났는데 아직 통합하지 못한 작업이 2개 이상이면 새 작업을 띄우지 않는다(통합이 병목). 한도를 더 올리거나 줄이는 것은 정책 결정이라 먼저 사용자에게 묻는다.
 
 ### 경험에서 얻은 운영 메모 (확인한 사실만, 확인일 2026-11-16)
 - **Antigravity 쿼터 초과 처리 (2026-11-16 확인)**: 작업자가 한도에 걸리면 `<hc> … hit an error: Individual quota reached … Resets in XhYm` 알림이 오고 상태가 `error`가 된다(`hc get`의 status msg에도 남음). ① 초기화 시각(지금+표시된 시간)을 `.orchestra/log.md`에 적는다. ② **같은 모델 그룹은 그 시간 동안 못 쓴다**: Claude 그룹(Opus·Sonnet)이 바닥나면 L2 Sonnet도 같이 막히므로 L2는 `Gemini 3.8 Flash`로 내리고, Gemini 그룹이면 Claude로 옮긴다(§5 "대체할 때는 같은 모델 그룹을 피한다"). ③ **미커밋 작업이 있으면 먼저 안전 백업**(`git diff > tracked.patch` + untracked 파일 복사를 scratchpad에)한 뒤, 다른 그룹 모델로 **같은 worktree에서 이어받게** 한다. 이어받는 지시문(영어)에 "이전 작업자가 한도로 멈춤, 계획은 이미 승인됨, 미커밋 변경이 있으니 처음부터 다시 쓰지 말고 `git status`/`git diff`로 읽고 검증·보완·완성하라"를 넣는다. ④ 죽은 터미널은 `hc kill`+`hc rm` 후 같은 이름으로 다시 띄워도 된다.
@@ -204,19 +204,19 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 
 ---
 
-## 9. 이 규칙 문서의 자동 개선 (사용자 지시, 2026-11-16)
+## 9. 이 규칙 문서의 자동 개선
 
-전역 문서(`~/.claude/CLAUDE.md`, 원본, 개선 기록 §10 포함)와 이 프로젝트 문서는 쓰면서 **내가 스스로 개선**하고, 개선할 때마다 허락을 구하지 않는다(아래 "먼저 물어볼 것" 제외).
+전역 문서(`~/.claude/CLAUDE.md`, 원본)와 이 프로젝트 문서는 쓰면서 **내가 스스로 개선**하고, 개선할 때마다 허락을 구하지 않는다(아래 "먼저 물어볼 것" 제외).
 
 - **계기**: 작업자 실패·막힘·낭비의 원인을 확인했을 때 / 사용자 교정 / 작업 묶음 종료 회고(1~3줄) / 새 사실 발견 / 같은 실수 반복 조짐.
 - **바로 고쳐도 되는 것**: 실행 경로·옵션, 오류 우회법, 지시문 체크리스트, §8 환경 메모, 문장 정리. 작게, 원인과 함께.
 - **먼저 사용자에게 물어볼 것**: 배정표(누구에게 어떤 모델), 쿼터 규칙, 리뷰어 규칙, 동시 작업자 수, 모델 교체, 사용자 원문(§0~§7)의 삭제·의미 변경, 사용자 지시와 충돌하는 변경. "무엇을 / 왜 / 달라지는 점" 3줄로 제안한다.
-- **난이도 판정·분류 기준은 스스로 갱신·세분화해도 된다**(사용자 승인, 2026-11-16). 조건:
+- **난이도 판정·분류 기준은 스스로 갱신·세분화해도 된다.** 조건:
   1. 근거 기반: 판정과 어긋난 결과(재작업·실패·리뷰 지적·쿼터 소진·과대/과소 판정)를 `.orchestra/log.md`에 쌓고 **같은 방향 2건 이상**이면 조정한다(명백한 설계 오판은 1건도 가능, 근거를 적는다).
   2. 세분 등급은 배정표에 이미 있는 작업자·모델 행만 재사용한다. 새 모델·1순위 변경·쿼터/리뷰/동시 수 변경은 먼저 묻는다.
-  3. 바꿀 때마다 §10에 `날짜 · 이전→이후 · 근거`를 적고, 프로젝트 사본과 동기화하고, 보고에 "난이도 기준 개선: …"을 한 줄 쓴다.
+  3. 바꿀 때마다 프로젝트 사본과 동기화하고, 보고에 "난이도 기준 개선: …"을 한 줄 쓴다.
   4. 판정 때마다 `.orchestra/log.md`에 예상 등급과 실제 결과를 남긴다(§6).
-- **방식**: 최소 수정 → 전역 §10에 한 줄 기록 → 프로젝트 사본 동기화(전역이 원본) → 중요한 사실은 memory에도 → 보고에 "규칙 개선: …". 확인한 사실만 날짜와 함께 적고, 약 300줄을 넘으면 오래된 메모를 합친다. 규칙끼리 충돌하면 사용자에게 알린다.
+- **방식**: 최소 수정 → 프로젝트 사본 동기화(전역이 원본) → 중요한 사실은 memory에도 → 보고에 "규칙 개선: …". 확인한 사실만 적고, 변경 이력·"사용자 변경/지시/승인" 같은 출처 표기는 문서에 쓰지 않고, 약 300줄을 넘으면 오래된 메모를 합친다. 규칙끼리 충돌하면 사용자에게 알린다.
 
 ---
 
@@ -231,7 +231,7 @@ L3 작업은 추가로: "코드를 쓰기 전에 계획을 먼저 보고하고, 
 - 구성: `Envelope`(인트로: 은하수 아래 나무 밑에 떨어진 봉투를 주워 열고 하늘을 올려다봄) → `Sky`(이름 '이하진' 모양 별자리, 별을 누르면 롤링페이퍼 편지가 열림, 열린 별 사이의 글씨 획이 이어짐) → `PhotoBoard`(포스트잇 사진).
 - 별 화면과 사진 화면 사이는 `src/useMagnetScroll.js`가 자석처럼 스크롤을 잡는다(CSS scroll-snap은 쓰지 않음).
 - 사진·메시지는 비공개 저장소 `Deopoler/birthday-content`(로컬 `content/`, git 무시)에서 빌드 때 가져온다. 비어 있으면 더미(`src/data/dummyPhotos.js`, `messages.js`)로 대체된다.
-- **3D 버전이 기본**(2026-11-17 사용자 결정, `src/main.jsx`). 주소에 `?3d=0`을 붙이면 기존 2D 버전. `src/three/`에 있고 three.js로 그린다: `world.js`(카메라 연출: 풀밭 → 하늘 → 사진), `sky/ground/tree/envelope/constellation/photos/fireworks.js`(장면), `App3D.jsx`(글자·버튼·편지만 DOM). WebGL 불가·움직임 줄이기 설정이면 2D로 대체. `?skip`은 인트로 건너뛰기(검증용). 셰이더에서 음수를 `pow` 하지 말 것(NaN이 빛 번짐을 타고 화면 전체가 검어짐).
+- **3D 버전이 기본**(`src/main.jsx`). 주소에 `?3d=0`을 붙이면 기존 2D 버전. `src/three/`에 있고 three.js로 그린다: `world.js`(카메라 연출: 풀밭 → 하늘 → 사진), `sky/ground/tree/envelope/constellation/photos/fireworks.js`(장면), `App3D.jsx`(글자·버튼·편지만 DOM). WebGL 불가·움직임 줄이기 설정이면 2D로 대체. `?skip`은 인트로 건너뛰기(검증용). 셰이더에서 음수를 `pow` 하지 말 것(NaN이 빛 번짐을 타고 화면 전체가 검어짐).
 - 이미지·글꼴 출처는 `CREDITS.md`. 인트로 그림 일부는 `scripts/gen-ground.mjs`로 생성한다.
 - 병렬 작업 시 컴포넌트별로 파일이 겹치지 않게 나눈다(각자 `components/<이름>.jsx|css`만 수정).
 - 화면 검증은 헤드리스 Edge + puppeteer-core로 한다(`C:/Users/seonj/AppData/Local/Temp/claude/826388f8a8a6d2af/f290c800-c198-42ea-8dae-d8cbb867c455/scratchpad/pt/`에 설치, 예시 스크립트 있음). 실제 터치는 `Input.dispatchTouchEvent`로 보낸다(`synthesizeScrollGesture`는 이 환경에서 동작하지 않음). 작업자마다 dev 서버 포트를 다르게 쓰고(5173은 메인 폴더용) 끝나면 종료한다.
