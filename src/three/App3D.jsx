@@ -190,7 +190,7 @@ export default function App3D() {
     setActive(i)
     worldRef.current?.openStar(i)
   }
-  const onClosing = useCallback(() => worldRef.current?.closeStar(active, (CLOSE_MS * 0.5) / 1000), [active])
+  const onClosing = useCallback(() => worldRef.current?.closeStar(active, CLOSE_MS / 1000) /* 편지가 완전히 닫힌 뒤 선이 그려진다 */, [active])
   const onClosed = useCallback(() => setActive(null), [])
   useEffect(() => {
     if (active != null || returnFocus.current == null) return
