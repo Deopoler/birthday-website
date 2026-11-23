@@ -36,12 +36,18 @@ jobs:
           if [ "$(date -u +%s)" -ge "$(date -u -d 2026-11-23T10:30:00Z +%s)" ]; then echo "open=true" >> "$GITHUB_OUTPUT"
           else echo "open=false" >> "$GITHUB_OUTPUT"; echo "::notice title=공개 전::19:30 KST 전이라 더미 사진·메시지로 빌드합니다."; fi
 
+      # 생일이 끝난 뒤(2026-11-24 00:00 KST)에는 사진·메시지 없이 '끝났어요' 안내 페이지만 배포한다.
+      - name: Check birthday ended
+        id: ended
+        run: |
+          if [ "$(date -u +%s)" -ge "$(date -u -d 2026-11-23T15:00:00Z +%s)" ]; then echo "ended=true" >> "$GITHUB_OUTPUT"; echo "::notice title=생일 종료::안내 페이지만 배포합니다."
+          else echo "ended=false" >> "$GITHUB_OUTPUT"; fi
       # 사진·메시지 가져오기. 분기:
       #  - 키 없음  → 이 단계 건너뜀 + 경고, 더미 사진·메시지로 빌드(배포는 계속).
       #  - 키 있음  → 가져오기. 실패하면 job 실패 → 배포 안 함(이미 올라가 있는 사이트가 더미로 덮이지 않게).
       # known_hosts 는 actions/checkout 이 GitHub 호스트 키를 내장해 처리. persist-credentials: false 로 키를 남기지 않음.
       - name: Fetch private content (photos, messages)
-        if: env.HAS_CONTENT_KEY == 'true' && steps.release.outputs.open == 'true'
+        if: env.HAS_CONTENT_KEY == 'true' && steps.release.outputs.open == 'true' && steps.ended.outputs.ended != 'true'
         uses: actions/checkout@v4
         with:
           repository: Deopoler/birthday-content
@@ -52,15 +58,23 @@ jobs:
         if: env.HAS_CONTENT_KEY != 'true'
         run: echo "::warning title=사진·메시지 없이 배포::CONTENT_DEPLOY_KEY secret 이 없어 비공개 저장소를 가져오지 않고 더미 사진·메시지로 빌드합니다."
 
-      - run: npm ci
-      - run: npm run build
+      - name: Build ended page
+        if: steps.ended.outputs.ended == 'true'
+        run: |
+          rm -rf content dist && mkdir dist
+          cp scripts/ended/index.html public/favicon.svg public/apple-touch-icon.png public/og-image.jpg dist/
+
+      - if: steps.ended.outputs.ended != 'true'
+        run: npm ci
+      - if: steps.ended.outputs.ended != 'true'
+        run: npm run build
 
       # dist 에는 처리된 WebP 와 빌드 결과만 있어야 한다(원본·.git·messages.json 이 섞이면 실패).
       - name: Verify dist has no private originals
         run: |
           bad=$(find dist \( -name .git -o -name 'messages.json' -o -path 'dist/content*' -o -path 'dist/photos*' \) -print)
           if [ -n "$bad" ]; then echo "::error::dist 에 들어가면 안 되는 파일: $bad"; exit 1; fi
-          echo "photos in dist: $(find dist/assets -name 'photo-*.webp' | wc -l) webp files"
+          echo "photos in dist: $(find dist -name 'photo-*.webp' | wc -l) webp files"
 
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
