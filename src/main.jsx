@@ -1,5 +1,6 @@
 import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
+import { LOCKED } from 'virtual:site-lock'
 import './index.css'
 
 // 기본은 3D 버전. 아래 경우에는 기존 2D 버전을 보여 준다.
@@ -19,11 +20,20 @@ function wants3D() {
 
 // 쓰는 쪽만 내려받는다
 const Root = wants3D() ? lazy(() => import('./three/App3D.jsx')) : lazy(() => import('./App.jsx'))
+const LockGate = LOCKED ? lazy(() => import('./lock/LockGate.jsx')) : null
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <Suspense fallback={null}>
-      <Root />
+      {LockGate ? (
+        <LockGate>
+          <Suspense fallback={null}>
+            <Root />
+          </Suspense>
+        </LockGate>
+      ) : (
+        <Root />
+      )}
     </Suspense>
   </StrictMode>,
 )

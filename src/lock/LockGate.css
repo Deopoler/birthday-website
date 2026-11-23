@@ -1,0 +1,227 @@
+.Lock,
+.Lock *,
+.Lock *::before,
+.Lock *::after {
+  box-sizing: border-box;
+}
+
+.Lock {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  display: grid;
+  place-items: center;
+  padding: 28px 18px;
+  background: radial-gradient(ellipse 85% 65% at 50% 26%, #1a2350 0%, #0a0f2c 55%, #04061a 100%);
+  color: #fff6e0;
+  font-family: system-ui, -apple-system, 'Pretendard', sans-serif;
+  overflow-x: hidden;
+}
+
+.Lock-stars {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 78% 12%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 64% 34%, #ffe9b8 50%, transparent 51%),
+    radial-gradient(1px 1px at 30% 70%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 88% 62%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 20% 44%, #ffe9b8 50%, transparent 51%),
+    radial-gradient(1px 1px at 52% 86%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at 42% 8%, #fff 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 85% 84%, #ffe9b8 50%, transparent 51%),
+    radial-gradient(1px 1px at 10% 82%, #fff 50%, transparent 51%);
+  opacity: 0.78;
+}
+
+.Lock-card {
+  position: relative;
+  width: 100%;
+  max-width: 390px;
+  padding: 30px 22px 26px;
+  border-radius: 20px;
+  background: rgba(14, 20, 54, 0.74);
+  border: 1px solid rgba(255, 236, 188, 0.16);
+  box-shadow:
+    0 20px 56px rgba(2, 4, 18, 0.62),
+    inset 0 1px 0 rgba(255, 246, 224, 0.08);
+  backdrop-filter: blur(12px);
+  text-align: center;
+}
+
+.Lock-moon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 16px;
+  filter: drop-shadow(0 0 14px rgba(255, 230, 150, 0.35));
+}
+
+.Lock-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  color: #fff6e0;
+  word-break: keep-all;
+}
+
+.Lock-desc {
+  margin: 10px 0 0;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #cfd5ef;
+  word-break: keep-all;
+}
+
+.Lock-note {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #aeb7db;
+  word-break: keep-all;
+}
+
+.Lock-form {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+}
+
+.Lock-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #d6dcf5;
+  margin-top: 4px;
+}
+
+.Lock-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 236, 188, 0.24);
+  background: rgba(6, 10, 32, 0.78);
+  color: #fff;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.Lock-input::placeholder {
+  color: rgba(207, 213, 239, 0.52);
+}
+
+.Lock-input:focus {
+  border-color: #ffe39c;
+  box-shadow: 0 0 0 3px rgba(255, 227, 156, 0.18);
+}
+
+.Lock-input:disabled {
+  opacity: 0.6;
+}
+
+.Lock-error {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #ff9c9c;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.Lock-btn {
+  margin-top: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 0;
+  background: linear-gradient(135deg, #ffe7a8 0%, #f3c96b 100%);
+  color: #19152d;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.14s ease, filter 0.18s ease, opacity 0.18s ease;
+}
+
+.Lock-btn:hover:not(:disabled) {
+  filter: brightness(1.04);
+}
+
+.Lock-btn:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.Lock-btn:disabled {
+  opacity: 0.78;
+  cursor: wait;
+}
+
+.Lock-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.Lock-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(25, 21, 45, 0.25);
+  border-top-color: #19152d;
+  animation: lock-spin 0.75s linear infinite;
+}
+
+@keyframes lock-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.Lock-codeBox {
+  margin-top: 18px;
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(6, 10, 32, 0.85);
+  border: 1px solid rgba(255, 236, 188, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.Lock-code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #ffeab3;
+  word-break: break-all;
+  text-align: left;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.Lock-copyBtn {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 236, 188, 0.34);
+  background: rgba(255, 236, 188, 0.1);
+  color: #fff6e0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.Lock-copyBtn:hover {
+  background: rgba(255, 236, 188, 0.18);
+}

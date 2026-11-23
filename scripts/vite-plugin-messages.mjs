@@ -32,6 +32,9 @@ export default function messagesPlugin(options = {}) {
 
     load(id) {
       if (id !== RESOLVED_VIRTUAL_ID) return null
+      if (process.env.SITE_LOCK === '1') {
+        return 'export const messages = [];\n'
+      }
       let result
       try {
         result = loadMessagesFile(filePath, label)
@@ -58,6 +61,7 @@ export default function messagesPlugin(options = {}) {
     },
 
     configureServer(server) {
+      if (process.env.SITE_LOCK === '1') return
       const contentDir = path.dirname(filePath)
       const syncWatch = () => {
         server.watcher.add([contentDir, filePath])

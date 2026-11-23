@@ -3,14 +3,27 @@
 // 그 파일이 없거나 비어 있으면 아래 더미 17개를 대신 보여 줘요.
 // 별은 17개: 메시지 i번째가 별 i번째에 붙고, 17개보다 적으면 그만큼만 별이 켜지며 18번째부터는 무시돼요.
 import { messages as realMessages } from 'virtual:messages'
+import { LOCKED } from 'virtual:site-lock'
 
-const dummyMessages = Array.from({ length: 17 }, (_, i) => ({
-  from: `친구 ${i + 1}`,
-  text: `하진 순장님, 생일 진심으로 축하드려요! 더미 메시지 ${i + 1}번입니다. 실제 메시지로 교체해 주세요.`,
-}))
+const dummyMessages = LOCKED
+  ? []
+  : Array.from({ length: 17 }, (_, i) => ({
+      from: `친구 ${i + 1}`,
+      text: `하진 순장님, 생일 진심으로 축하드려요! 더미 메시지 ${i + 1}번입니다. 실제 메시지로 교체해 주세요.`,
+    }))
 
-export const messages = (realMessages.length > 0 ? realMessages : dummyMessages).map((m, i) => ({
-  id: i,
-  from: m.from,
-  text: m.text,
-}))
+export let messages = LOCKED
+  ? []
+  : (realMessages.length > 0 ? realMessages : dummyMessages).map((m, i) => ({
+      id: i,
+      from: m.from,
+      text: m.text,
+    }))
+
+export function setUnlockedMessages(list) {
+  messages = list.map((m, i) => ({
+    id: m.id ?? i,
+    from: m.from,
+    text: m.text,
+  }))
+}

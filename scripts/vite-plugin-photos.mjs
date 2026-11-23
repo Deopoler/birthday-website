@@ -86,6 +86,49 @@ async function processPhotoFile(filePath, cacheDir) {
   return { hash, meta, srcPath, thumbPath }
 }
 
+export async function collectAndProcessPhotos({ photosDir, legacyDir, cacheDir, label = 'content/photos' }) {
+  // 예전 방식(저장소 맨 위 photos/)에 사진이 남아 있으면 옮기라고 알린다(읽거나 올리지는 않음).
+  const legacy = listPhotoFiles(legacyDir)
+  const legacyCount = legacy.supported.length + legacy.heic.length
+  if (legacyCount > 0) {
+    console.warn(
+      `\n[photos] ⚠️ 저장소 맨 위 photos/ 폴더에 사진 ${legacyCount}장이 있어요. 이 폴더는 더 이상 쓰지 않아요.\n` +
+        `  → 사진을 content/photos/ 로 옮기세요(공개 저장소에는 사진을 올리지 않아요. README 참고).\n`,
+    )
+  }
+
+  const { supported, heic } = listPhotoFiles(photosDir)
+  const candidates = [...supported]
+
+  for (const heicFile of heic) {
+    const fullPath = path.join(photosDir, heicFile)
+    try {
+      await sharp(fullPath).metadata()
+      candidates.push(heicFile)
+    } catch {
+      console.warn(
+        `\n[photos] ⚠️ 경고: "${label}/${heicFile}" 파일은 HEIC/HEIF 형식이라 읽을 수 없어 건너뛰었습니다.\n` +
+          `  → 윈도우 '사진' 앱 등에서 열기 → '다른 이름으로 저장'으로 JPG(.jpg) 형식으로 바꿔 넣어 주세요.\n`,
+      )
+    }
+  }
+
+  candidates.sort(naturalCompare)
+
+  const processedItems = []
+  for (const fileName of candidates) {
+    const fullPath = path.join(photosDir, fileName)
+    try {
+      processedItems.push(await processPhotoFile(fullPath, cacheDir))
+    } catch (err) {
+      console.warn(
+        `\n[photos] ⚠️ 경고: "${label}/${fileName}" 파일을 처리할 수 없어 건너뛰었습니다 (${err.message}).\n`,
+      )
+    }
+  }
+  return processedItems
+}
+
 export default function photosPlugin(options = {}) {
   let rootDir = process.cwd()
   let isBuild = false
@@ -115,50 +158,14 @@ export default function photosPlugin(options = {}) {
 
     async load(id) {
       if (id !== RESOLVED_VIRTUAL_ID) return null
-
-      // 예전 방식(저장소 맨 위 photos/)에 사진이 남아 있으면 옮기라고 알린다(읽거나 올리지는 않음).
-      const legacy = listPhotoFiles(legacyDir)
-      const legacyCount = legacy.supported.length + legacy.heic.length
-      if (legacyCount > 0) {
-        console.warn(
-          `\n[photos] ⚠️ 저장소 맨 위 photos/ 폴더에 사진 ${legacyCount}장이 있어요. 이 폴더는 더 이상 쓰지 않아요.\n` +
-            `  → 사진을 content/photos/ 로 옮기세요(공개 저장소에는 사진을 올리지 않아요. README 참고).\n`,
-        )
+      if (process.env.SITE_LOCK === '1') {
+        return 'export const photos = [];\n'
       }
 
-      const { supported, heic } = listPhotoFiles(photosDir)
-      const candidates = [...supported]
-
-      for (const heicFile of heic) {
-        const fullPath = path.join(photosDir, heicFile)
-        try {
-          await sharp(fullPath).metadata()
-          candidates.push(heicFile)
-        } catch {
-          console.warn(
-            `\n[photos] ⚠️ 경고: "${label}/${heicFile}" 파일은 HEIC/HEIF 형식이라 읽을 수 없어 건너뛰었습니다.\n` +
-              `  → 윈도우 '사진' 앱 등에서 열기 → '다른 이름으로 저장'으로 JPG(.jpg) 형식으로 바꿔 넣어 주세요.\n`,
-          )
-        }
-      }
-
-      candidates.sort(naturalCompare)
-
+      const processedItems = await collectAndProcessPhotos({ photosDir, legacyDir, cacheDir, label })
       const items = []
 
-      for (const fileName of candidates) {
-        const fullPath = path.join(photosDir, fileName)
-        let processed
-        try {
-          processed = await processPhotoFile(fullPath, cacheDir)
-        } catch (err) {
-          console.warn(
-            `\n[photos] ⚠️ 경고: "${label}/${fileName}" 파일을 처리할 수 없어 건너뛰었습니다 (${err.message}).\n`,
-          )
-          continue
-        }
-
-        const { hash, meta, srcPath, thumbPath } = processed
+      for (const { hash, meta, srcPath, thumbPath } of processedItems) {
         const srcAssetName = `assets/photo-${hash}-src.webp`
         const thumbAssetName = `assets/photo-${hash}-thumb.webp`
 
@@ -189,6 +196,7 @@ export default function photosPlugin(options = {}) {
     },
 
     configureServer(server) {
+      if (process.env.SITE_LOCK === '1') return
       // content/ 는 만들지 않는다(content:init 의 clone 이 빈 폴더가 아니면 실패하므로). 없어도 감시는 걸 수 있다.
       const contentDir = path.dirname(photosDir)
       const syncWatch = () => {
