@@ -1,6 +1,6 @@
 // '하진' 글씨를 획(polyline)으로 정의하고, 그 위에 별을 배치한다. (좌표 정규화 0~1, x: 가로, y: 세로)
 // - constellation: 클릭 가능한 메시지 별 17개 (획 위 주요 지점)
-// - strokeSegments: 같은 획에서 인접한 두 메시지 별 사이의 선 구간 (둘 다 열리면 그려짐)
+// - strokeSegments: 별-별 또는 별-교차점(junction) 사이의 선 구간 (segmentOn / activeSegments 규칙으로 표시)
 // - decorStars: 획을 따라 촘촘히 배치한 장식 별 (near = 가장 가까운 메시지 별 index)
 // 배치는 두 가지: 세로 화면용(글자 2개를 세로로 쌓음)과, 가로로 누운 짧은 화면용(글자 2개를 가로로 나란히).
 // 두 배치는 같은 획·같은 별 순서를 쓰고 글자 칸의 위치만 다르므로, 별 index 가 같아 열린 별 상태가 그대로 유지된다.
@@ -77,47 +77,172 @@ function build(layout) {
     return out
   }
 
-  const strokes = GLYPHS.flatMap((g, idx) => {
-    const c = cell(idx)
-    return g.map((st) => ({ ...st, pts: st.pts.map(([x, y]) => [c.x0 + x * c.w, c.y0 + y * c.h]) }))
-  })
-
   const stars = []
   const segments = []
   const decor = []
+  let junctionCount = 0
 
-  for (const s of strokes) {
-    // 닫힌 획은 시작점으로 되돌아오도록 첫 점을 끝에 추가
-    const pts = s.closed ? [...s.pts, s.pts[0]] : s.pts
-    const cum = lengths(pts)
-    const total = cum[cum.length - 1]
-    const ds = Array.from({ length: s.n }, (_, i) =>
-      s.closed ? (i / s.n) * total : s.n <= 1 ? total : (i / (s.n - 1)) * total,
-    )
-    const base = stars.length
-    ds.forEach((d) => {
-      const [x, y] = pointAt(pts, cum, d)
-      stars.push({ x: +x.toFixed(4), y: +y.toFixed(4) })
-    })
-    for (let k = 0; k < s.n - 1; k++) segments.push({ a: base + k, b: base + k + 1, pts: slice(pts, cum, ds[k], ds[k + 1]) })
-    if (s.closed) {
-      const last = ds[s.n - 1]
-      segments.push({ a: base + s.n - 1, b: base, pts: slice(pts, cum, last, total) })
+  const EPS = 1e-6
+  const edgeKey = (u, v) => (u < v ? `${u}:${v}` : `${v}:${u}`)
+
+  for (let gi = 0; gi < GLYPHS.length; gi++) {
+    const c = cell(gi)
+    const glyphStarBase = stars.length
+    const starCoords = []
+    const rawPolys = []
+
+    for (const st of GLYPHS[gi]) {
+      const mapped = st.pts.map(([x, y]) => [c.x0 + x * c.w, c.y0 + y * c.h])
+      // 닫힌 획은 시작점으로 되돌아오도록 첫 점을 끝에 추가
+      const pts = st.closed ? [...mapped, mapped[0]] : mapped
+      const cum = lengths(pts)
+      const total = cum[cum.length - 1]
+      const ds = Array.from({ length: st.n }, (_, i) =>
+        st.closed ? (i / st.n) * total : st.n <= 1 ? total : (i / (st.n - 1)) * total,
+      )
+      const base = stars.length
+      ds.forEach((d) => {
+        const [x, y] = pointAt(pts, cum, d)
+        stars.push({ x: +x.toFixed(4), y: +y.toFixed(4) })
+        starCoords.push([x, y])
+      })
+      for (let k = 0; k < st.n - 1; k++) rawPolys.push(slice(pts, cum, ds[k], ds[k + 1]))
+      if (st.closed) rawPolys.push(slice(pts, cum, ds[st.n - 1], total))
+      const steps = Math.max(1, Math.round(total / decorStep))
+      const upto = st.closed ? steps - 1 : steps
+      for (let i = 0; i <= upto; i++) {
+        const p = pointAt(pts, cum, (i / steps) * total)
+        if (!decor.some((q) => dist(p, [q.x, q.y]) < decorStep * 0.45)) decor.push({ x: p[0], y: p[1], base, n: st.n })
+      }
     }
-    const steps = Math.max(1, Math.round(total / decorStep))
-    const upto = s.closed ? steps - 1 : steps
-    for (let i = 0; i <= upto; i++) {
-      const p = pointAt(pts, cum, (i / steps) * total)
-      if (!decor.some((q) => dist(p, [q.x, q.y]) < decorStep * 0.45)) decor.push({ x: p[0], y: p[1], base, n: s.n })
+
+    // 글자 하나를 그래프(별 + 교차점 노드)로 분해: 겹친 소구간을 합치고 선분 위의 다른 꼭짓점에서 분할한다.
+    const verts = starCoords.map(([x, y], k) => ({ id: k, x, y, star: glyphStarBase + k, jId: null, isNode: true }))
+    const intern = ([x, y]) => {
+      for (const v of verts) if (Math.hypot(x - v.x, y - v.y) < EPS) return v.id
+      const id = verts.length
+      verts.push({ id, x, y, star: -1, jId: null, isNode: false })
+      return id
+    }
+
+    const elemSet = new Set()
+    const elemEdges = []
+    for (const poly of rawPolys) {
+      for (let i = 1; i < poly.length; i++) {
+        const u = intern(poly[i - 1])
+        const v = intern(poly[i])
+        if (u === v) continue
+        const k = edgeKey(u, v)
+        if (elemSet.has(k)) continue
+        elemSet.add(k)
+        elemEdges.push([u, v])
+      }
+    }
+
+    const splitSet = new Set()
+    const adj = Array.from({ length: verts.length }, () => [])
+    const addSplitEdge = (u, v) => {
+      if (u === v) return
+      const k = edgeKey(u, v)
+      if (splitSet.has(k)) return
+      splitSet.add(k)
+      adj[u].push(v)
+      adj[v].push(u)
+    }
+
+    for (const [u, v] of elemEdges) {
+      const pu = verts[u]
+      const pv = verts[v]
+      const dx = pv.x - pu.x
+      const dy = pv.y - pu.y
+      const len2 = dx * dx + dy * dy
+      const hits = []
+      for (const w of verts) {
+        if (w.id === u || w.id === v) continue
+        if (Math.hypot(w.x - pu.x, w.y - pu.y) <= EPS || Math.hypot(w.x - pv.x, w.y - pv.y) <= EPS) continue
+        const t = ((w.x - pu.x) * dx + (w.y - pu.y) * dy) / len2
+        if (t <= 0 || t >= 1) continue
+        if (Math.hypot(w.x - (pu.x + t * dx), w.y - (pu.y + t * dy)) < EPS) hits.push({ id: w.id, t })
+      }
+      hits.sort((a, b) => a.t - b.t)
+      let prev = u
+      for (const h of hits) {
+        addSplitEdge(prev, h.id)
+        prev = h.id
+      }
+      addSplitEdge(prev, v)
+    }
+
+    // 3갈래 이상 모이는 비-별 꼭짓점이 교차점(junction). 차수 2 꼭짓점은 선 안의 꺾임이다.
+    for (const v of verts) {
+      if (v.star < 0 && adj[v.id].length >= 3) {
+        v.isNode = true
+        v.jId = junctionCount++
+      }
+    }
+
+    const visited = new Set()
+    const glyphEdges = []
+    for (const v of verts) {
+      if (!v.isNode) continue
+      for (const next of adj[v.id]) {
+        const k0 = edgeKey(v.id, next)
+        if (visited.has(k0)) continue
+        const chain = [v.id, next]
+        visited.add(k0)
+        let prev = v.id
+        let cur = next
+        while (!verts[cur].isNode) {
+          const nbrs = adj[cur]
+          const nxt = nbrs[0] === prev ? nbrs[1] : nbrs[0]
+          if (nxt == null) break
+          visited.add(edgeKey(cur, nxt))
+          chain.push(nxt)
+          prev = cur
+          cur = nxt
+        }
+        glyphEdges.push(chain)
+      }
+    }
+
+    const jPeers = new Map()
+    for (const chain of glyphEdges) {
+      const u = verts[chain[0]]
+      const w = verts[chain[chain.length - 1]]
+      if (u.star >= 0 && w.jId != null) {
+        if (!jPeers.has(w.jId)) jPeers.set(w.jId, new Set())
+        jPeers.get(w.jId).add(u.star)
+      } else if (w.star >= 0 && u.jId != null) {
+        if (!jPeers.has(u.jId)) jPeers.set(u.jId, new Set())
+        jPeers.get(u.jId).add(w.star)
+      }
+    }
+
+    for (const rawChain of glyphEdges) {
+      let chain = rawChain
+      let u = verts[chain[0]]
+      let w = verts[chain[chain.length - 1]]
+      // 별-교차점 간선은 별 쪽에서 교차점 쪽으로 향하도록 정렬(3D 선 그리기 방향)
+      if (u.jId != null && w.star >= 0) {
+        chain = [...chain].reverse()
+        u = verts[chain[0]]
+        w = verts[chain[chain.length - 1]]
+      }
+      const pts = chain.map((id) => [verts[id].x, verts[id].y])
+      if (u.star >= 0 && w.star >= 0) {
+        segments.push({ id: `${u.star}-${w.star}`, a: u.star, b: w.star, pts })
+      } else if (u.star >= 0 && w.jId != null) {
+        const peers = [...jPeers.get(w.jId)].sort((x, y) => x - y)
+        segments.push({ id: `${u.star}-j${w.jId}`, a: u.star, j: w.jId, peers, pts })
+      }
     }
   }
 
   return {
     constellation: stars,
-    strokeSegments: segments.map((sg) => ({
-      a: sg.a,
-      b: sg.b,
-      d: 'M' + sg.pts.map(([x, y]) => `${(x * 100).toFixed(2)} ${(y * 100).toFixed(2)}`).join('L'),
+    strokeSegments: segments.map(({ pts, ...rest }) => ({
+      ...rest,
+      d: 'M' + pts.map(([x, y]) => `${(x * 100).toFixed(2)} ${(y * 100).toFixed(2)}`).join('L'),
     })),
     decorStars: decor
       .map((p, id) => {
@@ -134,6 +259,21 @@ function build(layout) {
       })
       .filter((p) => !p.skip),
   }
+}
+
+// 별-별 간선: 두 끝 별이 모두 연결됐을 때. 별-교차점 간선: 그 별이 연결됐고 같은 교차점에 닿은 별이 2개 이상 연결됐을 때.
+export function segmentOn(seg, isLinked) {
+  if (!isLinked(seg.a)) return false
+  if (seg.b != null) return isLinked(seg.b)
+  let n = 0
+  for (const p of seg.peers) if (isLinked(p)) n++
+  return n >= 2
+}
+
+export function activeSegments(layout, linked, count = layout.constellation.length) {
+  const has = typeof linked === 'function' ? linked : (i) => linked.has(i)
+  const isLinked = (i) => i < count && has(i)
+  return layout.strokeSegments.filter((s) => segmentOn(s, isLinked))
 }
 
 export const portraitLayout = build(PORTRAIT)

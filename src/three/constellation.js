@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { tween, ease } from './util'
+import { segmentOn } from '../data/constellation'
 
 // '하진' 별자리. 그룹의 지역 좌표 단위는 '화면 픽셀'(가운데가 원점, y는 위쪽)이고,
 // 세계 쪽에서 그룹 scale 을 (세계 길이/픽셀)로 맞춰 2D 배치와 똑같은 자리에 보이게 한다.
@@ -62,7 +63,8 @@ const LINE_FS = /* glsl */ `
   uniform float uProg, uFade, uTime, uCele;
   varying float vLen; varying float vSide;
   void main(){
-    float vis = smoothstep(uProg + 0.001, uProg - 0.04, vLen);
+    float p = uProg * 1.04;
+    float vis = smoothstep(p + 0.001, p - 0.04, vLen) * step(0.001, uProg);
     float hd = (vLen - uProg) * 9.0;
     float head = exp(-hd * hd) * step(uProg, 0.999) * step(0.001, uProg);
     float d = abs(vSide);
@@ -171,21 +173,24 @@ export function createConstellation(engine) {
     decor.geometry.setAttribute('aLit', new THREE.BufferAttribute(litNow, 1))
     decor.geometry.setAttribute('aPh', new THREE.BufferAttribute(ph, 1))
 
-    const old = segs
-    for (const s of old) { s.mesh.geometry.dispose(); lines.remove(s.mesh) }
-    segs = data.strokeSegments.filter((s) => s.a < count && s.b < count).map((s, i) => {
-      const prev = old[i]
-      const mat = prev?.mesh.material ?? new THREE.ShaderMaterial({ ...add, uniforms: { ...shared, uProg: { value: 0 } }, vertexShader: LINE_VS, fragmentShader: LINE_FS })
-      const mesh = new THREE.Mesh(buildLine(s.d), mat)
-      mesh.frustumCulled = false
-      lines.add(mesh)
-      return { a: s.a, b: s.b, mesh, on: prev?.on ?? false }
-    })
+    const old = new Map(segs.map((s) => [s.seg.id, s]))
+    for (const s of segs) { s.mesh.geometry.dispose(); lines.remove(s.mesh) }
+    segs = data.strokeSegments
+      .filter((s) => s.a < count && (s.b == null || s.b < count))
+      .map((s) => {
+        const prev = old.get(s.id)
+        const mat = prev?.mesh.material ?? new THREE.ShaderMaterial({ ...add, uniforms: { ...shared, uProg: { value: 0 } }, vertexShader: LINE_VS, fragmentShader: LINE_FS })
+        const mesh = new THREE.Mesh(buildLine(s.d), mat)
+        mesh.frustumCulled = false
+        lines.add(mesh)
+        return { seg: s, mesh, on: prev?.on ?? false }
+      })
   }
 
   function syncSegs(animate, delay = 0.25) {
+    const isLinked = (i) => i < count && linked.has(i)
     for (const s of segs) {
-      const want = linked.has(s.a) && linked.has(s.b)
+      const want = segmentOn(s.seg, isLinked)
       if (want === s.on) continue
       s.on = want
       const u = s.mesh.material.uniforms.uProg

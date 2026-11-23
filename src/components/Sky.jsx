@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { messages } from '../data/messages'
-import { portraitLayout, landscapeLayout, CONSTELLATION_TEXT } from '../data/constellation'
+import { portraitLayout, landscapeLayout, activeSegments, CONSTELLATION_TEXT } from '../data/constellation'
 import './Sky.css'
 
 // 배경 작은 별: 고정 시드 의사난수로 리렌더에도 동일하게 유지
@@ -84,11 +84,12 @@ export default function Sky() {
   const phaseRef = useRef('idle')
 
   const landscape = useLandscapeCompact()
-  const { constellation, strokeSegments, decorStars } = landscape ? landscapeLayout : portraitLayout
+  const layout = landscape ? landscapeLayout : portraitLayout
+  const { constellation, decorStars } = layout
   const count = Math.min(messages.length, constellation.length)
   const openSet = new Set(opened)
   const linkedSet = new Set(linked)
-  const segs = strokeSegments.filter((s) => linkedSet.has(s.a) && linkedSet.has(s.b))
+  const segs = activeSegments(layout, linkedSet, count)
 
   const go = (p) => {
     phaseRef.current = p
@@ -223,7 +224,7 @@ export default function Sky() {
 
           <svg className="Sky-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {segs.map((s) => (
-              <g key={`${s.a}-${s.b}`}>
+              <g key={s.id}>
                 <path className="Sky-line Sky-line-glow" d={s.d} pathLength="1" fill="none" />
                 <path className="Sky-line" d={s.d} pathLength="1" fill="none" />
               </g>
