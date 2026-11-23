@@ -10,9 +10,10 @@
 
 ## 프로젝트 개요
 - 하진 순장님 생일 축하 웹사이트. React + Vite, GitHub Pages 배포(`.github/workflows/deploy.yml`), 모바일 우선.
-- 구성: `Envelope`(인트로: 은하수 아래 나무 밑에 떨어진 봉투를 주워 열고 하늘을 올려다봄) → `Sky`(이름 '이하진' 모양 별자리, 별을 누르면 롤링페이퍼 편지가 열림, 열린 별 사이의 글씨 획이 이어짐) → `PhotoBoard`(포스트잇 사진).
+- 구성: `Envelope`(인트로: 은하수 아래 나무 밑에 떨어진 봉투를 주워 열고 하늘을 올려다봄) → `Sky`('하진' 모양 별자리 17개 별, 별을 누르면 롤링페이퍼 편지가 열림, 열린 별 사이의 글씨 획이 이어짐) → `PhotoBoard`(포스트잇 사진).
 - 별 화면과 사진 화면 사이는 `src/useMagnetScroll.js`가 자석처럼 스크롤을 잡는다(CSS scroll-snap은 쓰지 않음).
-- 사진·메시지는 비공개 저장소 `Deopoler/birthday-content`(로컬 `content/`, git 무시)에서 빌드 때 가져온다. 비어 있으면 더미(`src/data/dummyPhotos.js`, `messages.js`)로 대체된다.
+- 사진·메시지는 비공개 저장소 `Deopoler/birthday-content`(로컬 `content/`, git 무시)에서 빌드 때 가져온다. 비어 있으면 더미(`src/data/dummyPhotos.js`, `messages.js`)로 대체된다. 메시지는 17개(별 수), 편지 최대 1000자.
+- 배포(`deploy.yml`)는 시각으로 갈린다: 2026-11-23 19:30 KST 전 더미, 이후 실제 콘텐츠, 2026-11-24 00:00 KST 이후 **비밀번호 잠금 빌드**(`SITE_LOCK=1`, `scripts/vite-plugin-site-lock.mjs`가 콘텐츠를 암호화, 화면은 `src/lock/`). 잠금 Secret(`SITE_CONTENT_KEY` + `SITE_PASSWORD` 또는 `SITE_LOCK_CODE`)이 없으면 `scripts/ended/index.html` 안내 페이지만 배포한다. 비밀번호 재설정은 사이트에서 받은 `HJ2.` 코드를 `SITE_LOCK_CODE`로 등록 후 재배포(값을 로그에 출력하지 말 것).
 - **3D 버전이 기본**(`src/main.jsx`). 주소에 `?3d=0`을 붙이면 기존 2D 버전. `src/three/`에 있고 three.js로 그린다: `world.js`(카메라 연출: 풀밭 → 하늘 → 사진), `sky/ground/tree/envelope/constellation/photos/fireworks.js`(장면), `App3D.jsx`(글자·버튼·편지만 DOM). WebGL 불가·움직임 줄이기 설정이면 2D로 대체. `?skip`은 인트로 건너뛰기(검증용). 셰이더에서 음수를 `pow` 하지 말 것(NaN이 빛 번짐을 타고 화면 전체가 검어짐).
 - 이미지·글꼴 출처는 `CREDITS.md`. 인트로 그림 일부는 `scripts/gen-ground.mjs`로 생성한다.
 - 병렬 작업 시 컴포넌트별로 파일이 겹치지 않게 나눈다(각자 `components/<이름>.jsx|css`만 수정).
