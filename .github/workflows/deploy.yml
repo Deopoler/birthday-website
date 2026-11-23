@@ -28,12 +28,20 @@ jobs:
       - name: Check no private photos in public repo
         run: node scripts/check-no-photos.mjs --tracked
 
+      # 공개 시각(2026-11-23 19:30 KST) 전에는 사진·메시지를 가져오지 않고 더미로 빌드한다.
+      # 19:30 에 scheduled-release.yml 이 이 배포를 다시 실행하면 그때부터 실제 사진·메시지가 실린다.
+      - name: Check content release time
+        id: release
+        run: |
+          if [ "$(date -u +%s)" -ge "$(date -u -d 2026-11-23T10:30:00Z +%s)" ]; then echo "open=true" >> "$GITHUB_OUTPUT"
+          else echo "open=false" >> "$GITHUB_OUTPUT"; echo "::notice title=공개 전::19:30 KST 전이라 더미 사진·메시지로 빌드합니다."; fi
+
       # 사진·메시지 가져오기. 분기:
       #  - 키 없음  → 이 단계 건너뜀 + 경고, 더미 사진·메시지로 빌드(배포는 계속).
       #  - 키 있음  → 가져오기. 실패하면 job 실패 → 배포 안 함(이미 올라가 있는 사이트가 더미로 덮이지 않게).
       # known_hosts 는 actions/checkout 이 GitHub 호스트 키를 내장해 처리. persist-credentials: false 로 키를 남기지 않음.
       - name: Fetch private content (photos, messages)
-        if: env.HAS_CONTENT_KEY == 'true'
+        if: env.HAS_CONTENT_KEY == 'true' && steps.release.outputs.open == 'true'
         uses: actions/checkout@v4
         with:
           repository: Deopoler/birthday-content
