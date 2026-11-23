@@ -242,6 +242,8 @@ export function createWorld(canvas, { photos, starCount, onLayout, onFrame }) {
     deep.material.uniforms.uTime.value = time
     deep.material.uniforms.uPx.value = engine.state.dpr
     deep.material.uniforms.uFade.value = S.look * 0.9
+    // 사진 화면에서는 빛 번짐을 끈다(밝은 사진 뒤로 빛이 깔려 보임)
+    engine.bloom.strength = 0.7 * (1 - smooth(0.3, 0.9, S.fly))
     wall.group.visible = S.fly > 0.02
     wall.setArrive(S.fly)
     wall.setCamY(S.pan)
