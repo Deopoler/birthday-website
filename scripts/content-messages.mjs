@@ -3,8 +3,8 @@
 import fs from 'node:fs'
 
 export const MAX_FROM = 40
-export const MAX_TEXT = 500
-export const STAR_COUNT = 30
+export const MAX_TEXT = 1000
+export const STAR_COUNT = 17
 
 export class MessagesError extends Error {
   constructor(message, { file, line, column } = {}) {

@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 import { tween, ease } from './util'
 
-// '이하진' 별자리. 그룹의 지역 좌표 단위는 '화면 픽셀'(가운데가 원점, y는 위쪽)이고,
+// '하진' 별자리. 그룹의 지역 좌표 단위는 '화면 픽셀'(가운데가 원점, y는 위쪽)이고,
 // 세계 쪽에서 그룹 scale 을 (세계 길이/픽셀)로 맞춰 2D 배치와 똑같은 자리에 보이게 한다.
 const parsePath = (d) => d.slice(1).split('L').map((s) => s.split(' ').map(Number))
 

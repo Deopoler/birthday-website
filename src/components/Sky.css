@@ -193,7 +193,10 @@
   transform: translate(-50%, -50%);
   box-sizing: border-box;
   width: min(calc(100vw - 40px), 340px);
-  padding: 30px 24px 22px;
+  max-height: calc(100svh - 32px);
+  display: flex;
+  flex-direction: column;
+  padding: 40px 24px 22px;
   overflow: hidden;
   color: #4a3a2a;
   background-color: #fff8e6;
@@ -219,13 +222,13 @@
 .Sky-letter.is-opening::before { opacity: 1; transition-delay: 0.45s; }
 /* 내용은 카드가 거의 다 펼쳐진 뒤 페이드인, 닫을 땐 먼저 사라짐 */
 .Sky-content, .Sky-close { opacity: 0; transition: opacity 0.12s ease-in; }
-.Sky-content { position: relative; }
+.Sky-content { position: relative; min-height: 0; display: flex; flex-direction: column; }
 .Sky-letter.is-opening .Sky-content,
 .Sky-letter.is-opening .Sky-close { opacity: 1; transition: opacity 0.3s ease-out 0.55s; }
 .Sky-letter.is-open .Sky-content,
 .Sky-letter.is-open .Sky-close { opacity: 1; transition: opacity 0.2s ease-out; }
-.Sky-text { margin: 0 0 14px; font-size: 16px; line-height: 28px; word-break: keep-all; max-height: 50svh; overflow-y: auto; touch-action: pan-y; }
-.Sky-from { margin: 0; text-align: right; font-size: 15px; font-weight: 600; line-height: 28px; }
+.Sky-text { margin: 0 0 14px; padding-right: 4px; font-size: 16px; line-height: 28px; word-break: keep-all; flex: 1 1 auto; min-height: 0; max-height: 55svh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.Sky-from { margin: 0; flex-shrink: 0; text-align: right; font-size: 15px; font-weight: 600; line-height: 28px; }
 .Sky-close {
   position: absolute;
   top: 4px;
@@ -250,7 +253,7 @@
 .Sky-close:focus-visible { outline: 2px solid #7a6448; outline-offset: 1px; border-radius: 50%; }
 
 /* ───────── 가로로 누운 짧은 화면(폰 가로: 844x390, 932x430, 667x375 …) ─────────
-   '이하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.jsx 의 useLandscapeCompact 와 같은 조건).
+   '하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.jsx 의 useLandscapeCompact 와 같은 조건).
    별 영역은 높이의 2.1배 폭으로 두어 글자 칸이 정사각형에 가깝게 유지된다. 세로 화면·데스크톱에는 영향 없음. */
 @media (orientation: landscape) and (max-height: 500px) {
   .Sky-field { width: min(100%, calc(100svh * 2.1)); }
@@ -263,5 +266,5 @@
     left: calc(14px + env(safe-area-inset-left, 0px));
   }
   .Sky-letter { width: min(calc(100vw - 40px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)), 340px); }
-  .Sky-text { max-height: 40svh; }
+  .Sky-text { max-height: 45svh; }
 }

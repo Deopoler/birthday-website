@@ -52,7 +52,7 @@ const placeGlow = (el, r) => {
 
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-// 가로로 누운 짧은 화면(폰 가로 등)에서는 '이하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.css 의 같은 미디어쿼리와 짝).
+// 가로로 누운 짧은 화면(폰 가로 등)에서는 '하진'을 가로 한 줄로 배치한 별 좌표를 쓴다(Sky.css 의 같은 미디어쿼리와 짝).
 // 별 index 가 두 배치에서 같아서, 화면을 돌려도 열린 별 상태가 그대로 유지된다.
 const LANDSCAPE_Q = '(orientation: landscape) and (max-height: 500px)'
 function useLandscapeCompact() {

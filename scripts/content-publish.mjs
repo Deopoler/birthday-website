@@ -3,7 +3,7 @@
 // --dry-run: 검사는 하고, 커밋·push·배포는 하지 않고 하려는 일만 보여 준다.
 import fs from 'node:fs'
 import path from 'node:path'
-import { loadMessagesFile, MessagesError } from './content-messages.mjs'
+import { loadMessagesFile, MessagesError, STAR_COUNT } from './content-messages.mjs'
 import {
   act,
   capture,
@@ -42,7 +42,7 @@ try {
   for (const w of warnings) console.warn(`  ⚠️ ${w}`)
   console.log(
     exists && messages.length > 0
-      ? `  메시지 ${messages.length}개 확인 (별 30개${messages.length < 30 ? `, ${messages.length}개만 켜져요` : ''})`
+      ? `  메시지 ${messages.length}개 확인 (별 ${STAR_COUNT}개${messages.length < STAR_COUNT ? `, ${messages.length}개만 켜져요` : ''})`
       : '  메시지 파일이 없거나 비어 있어요 → 사이트에는 더미 메시지가 보여요.',
   )
 } catch (err) {
